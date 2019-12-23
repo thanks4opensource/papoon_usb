@@ -54,7 +54,8 @@ You should have received a copy of the [GNU General Public License](LICENSE.txt)
 How to use papoon_usb
 ---------------------
 
-### TL;DNR ("Too Long, Did Not Read") <a name="tldnr_too_long_did_not_read"></a>
+<a name="tldnr_too_long_did_not_read"></a>
+### TL;DNR ("Too Long, Did Not Read")
 
 Simple example <a name="simple_example"></a> of client application, using USB CDC-ACM class (source available in [example.cxx](examples/blue_pill/example.cxx)):
 
@@ -211,10 +212,11 @@ End main loop, end `main()` function.
 
 
 
-<br>
-### NLE;WTRM ("Not Long Enough, Want To Read More") <a name="nle_want_to_read_more"></a>
+<br> ("Not Long Enough, Want To Read More") <a name="nle_want_to_read_more"></a>
+### NLE;WTRM
 
-#### Interrupts, polling, callbacks <a name="interrupts_polling_callbacks"></a>
+<a name="interrupts_polling_callbacks"></a>
+#### Interrupts, polling, callbacks
 
 papoon_usb can be used in any of four modes chosen from a 2x2 configuration matrix:
 
@@ -251,7 +253,8 @@ although it might be possible to do some additional minimal processing within th
 If the `USB_DEV_ENDPOINT_CALLBACKS` macro is defined, papoon_usb will call any functions registered via `UsbDev::register_recv_callback()` or `UsbDev::register_send_callback()` when data has been received on the registered endpoint or it is available to send data, respectively. C++ coders note that these must be global or namespace-scope functions (see [C++](#cplusplus), below), not object instance methods (no `std::bind` available). Note that enabling both polling and callbacks is not particularly useful: `UsbDev::poll()` returns a `uint16_t` with bits set indicating "ready" endpoints (which can be extracted using the `UsbDev::poll_recv_ready()` and `UsbDev::poll_recv_ready()` convenience functions), and explicitly executing the appropriate code either inline or by calling a "callback" function in the application's main loop is as efficient as allowing `UsbDev` to call the callback implicitly. The choice is a matter of the application writer's taste.
 
 
-#### USB class implementations <a name="usb_class_implementations"></a>
+<a name="usb_class_implementations"></a>
+#### USB class implementations
 
 It is very easy to implement USB device classes (C++ classes derived from UsbDev) in papoon_usb ... or at least as easy as is possible given the excessive complexity of device classes in the USB standards.
 
@@ -324,7 +327,8 @@ This USB MIDI demo sends a looped C major ascending scale to the host computer. 
 Implementation of papoon_usb
 ----------------------------
 
-#### C++ <a name="cplusplus"></a>
+<a name="cplusplus"></a>
+#### C++
 
 Everyone will hate the papoon_usb code.
 
@@ -353,8 +357,8 @@ Virtual methods vs static polymorphism? <a name="static_polymorphism"></a> Again
 But please feel free to re-architect the code to fit other design philosophies. (Respect the GPL open-source [License](#license), above.) Report back on binary executable code size and runtime performance, and if comparable (and I can understand the code) I'll consider using your version.
 
 
-<br>
-#### regbits <a name="regbits_github"></a>
+<br> <a name="regbits_github"></a>
+#### regbits
 
 papoon_usb is written using the [regbits](https://github.com/thanks4opensource/regbits) C++ templates for type-safe bit manipulation, and in particular the [regbits_stm](https://github.com/thanks4opensource/regbits_stm) implementation for STM32F103xb, all necessary source files for which are  explicitly/directly included in this repository for convenience (see [regbits.hxx](regbits/regbits.hxx), [stm32f103xb.hxx](regbits/stm32f103xb.hxx)).
 
@@ -391,7 +395,8 @@ I decided instead to use as a starting point a GitHub repository I later discove
 
 Finally, in theory none of this analysis/hacking/porting should ever have been necessary. One would think a company the size of ST could document their hardware well enough that a competent programmer could write code to utilize it (and in fact would be interested in doing so, if for no other reason than to increase sales). Not so --- if interested see [STM hardware and documentation](#st_hardware_and_documentation) below for details. Also note that the STM32F103 USB subsystem documentation is better than many other ST attempts, and that evaluation of whether or not I'm a "competent programmer" is left to the reader.
 
-#### Funny name <a name="not_insane"></a>
+<a name="not_insane"></a>
+#### Funny name
 
 I have long thought that the "cuter" the name of a software component, the lower the quality. That said, given the huge amount of time I invested in writing this library (primarily spent decrypting the ST documentation and example code, reverse-engineering the hardware, and dealing with the byzantine  USB standards themselves) --- efforts that never should have been necessary had a reasonable implementation been available --- I chose the name and am including the "insane" accusations.
 
@@ -407,8 +412,8 @@ Insanity
 
 The following is highly opinionated editorial opinion, perusal of which is not in the least necessary for using or understanding papoon_usb. Those easily offended by extremely critical remarks directed toward well established and respected hardware and software organizations should likely skip reading it. Regardless, I stand by (and attempt to justify) the statements expressed below.
 
-
-### USB standard <a name="usb_standard"></a>
+<a name="usb_standard"></a>
+### USB standard
 
 The USB standard(s) is/are poorly conceived and (insanely) overly complex.
 
@@ -461,8 +466,8 @@ So why, given all the vitriol expressed above, do I use USB? Simply because ther
 You can't fight city hall.
 
 
-<br>
-### ST hardware and documentation <a name="st_hardware_and_documentation"></a>
+<br> <a name="st_hardware_and_documentation"></a>
+### ST hardware and documentation
 
 As per the example described above, ST's documentation for the USB peripheral, while actually better than many of their other attempts, leaves a lot to be desired. In general the impression given is that users are not intended to have much need for the documentation nor develop much software at the register level it describes, and instead use ST-provided libraries and tools (see [ST software](#st_software), below, for problems in that area).
 
@@ -493,10 +498,11 @@ Other problems in addition to the above USB peripheral ones include the fact tha
 
 
 
-<br>
-### STM software <a name="st_software"></a>
+<br> <a name="st_software"></a>
+### STM software
 
-#### ST HAL (and LL) libraries <a name="ST_HAL_and_LL_libraries"></a>
+<a name="ST_HAL_and_LL_libraries"></a>
+#### ST HAL (and LL) libraries
 
 I've written it before, both in this README.md, similar ones in other repositories, and in emails and online forums: ST's HAL and LL libraries (and their inclusion in the "CubeMX", etc. IDEs) are bloated, inefficient, convoluted disasters masquerading as official, vendor-vetted software.
 
@@ -516,8 +522,8 @@ Is the ST code either a good tutorial or an efficient implementation? I contend 
 
 As "insane" as the current ST Cube/HAL/LL code is, the older "STM32_USB-FS-Device_Lib" is much worse. Again I invite readers to see for themselves, but basically the code defies attempts at static analysis. It is based on a totally unnecessary state machine, driven by a state variable whose value can only be determined at runtime. And tracing USB code at runtime is nearly impossible --- the timing requirements are so strict that any attempts to follow it with debugging breakpoints cause it to fail. I ended up implementing a complex runtime tracing system which kept a large buffer of encoded debug state information and code locations, and standalone programs to parse and display the resultant dumps in readable form. All of this is in addition to the code's fondness for similarly named preprocessor macros and C functions which call each other for no discernable design reason, variables that store values for deferred use later on (these were the first things I removed --- they turned out to be unneeded), and many other mis-features. But as mentioned above, this codebase was the only working one I had to start with.
 
-
-#### Endpoint registers "toggle-only" bits <a name="toggle-only-bits-software"></a>
+<a name="toggle-only-bits-software"></a>
+#### Endpoint registers "toggle-only" bits
 
 As a final example, both of the above codebases contain almost identical code to handle the "toggle-only" bits in the STM32F103xx USB peripheral as described [above](#toggle-only-bits-hardware). I speculate that the latter code was copied from the former, in an example of the "it works, don't touch it" mentality.
 
@@ -600,7 +606,8 @@ Further development
 * Implement endpoint double-buffering.
 
 
-#### regbits <a name="regbits_future_work"></a>
+<a name="regbits_future_work"></a>
+#### regbits
 * Implement type-safe NVIC bit manipulation in core_cm3.hxx and stm32f103xb.hxx
 * Implement direct, write-only, methods for manipulating "toggle only" bits in EPRN[N] registers (rely on register being in known state at fixed points during enumeration process).
 
