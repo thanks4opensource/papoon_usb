@@ -103,7 +103,7 @@ Simple example <a name="simple_example"></a> of client application, using USB CD
         }
     }
 
-That's it. Where's usbd_desc.c (which doesn't have any USB descriptors in it),  usbd_cdc_interface.c, stm32f1xx_it.c, ad nauseum --- all of which other libraries think application client coders should be require to implement/modify? (See [STM software](#st_software), below.)  Sorry ... they're not needed here.
+That's it. Where's usbd_desc.c (which doesn't have any USB descriptors in it),  usbd_cdc_interface.c, stm32f1xx_it.c, ad nauseum --- all of which other libraries think application client coders should be require to implement/modify? (See [ST software](#st_software), below.)  Sorry ... they're not needed here.
 
 <br>
 <br>
@@ -212,8 +212,8 @@ End main loop, end `main()` function.
 
 
 
-<br> ("Not Long Enough, Want To Read More") <a name="nle_want_to_read_more"></a>
-### NLE;WTRM
+<br> <a name="nle_want_to_read_more"></a>
+### NLE;WTRM ("Not Long Enough, Want To Read More")
 
 <a name="interrupts_polling_callbacks"></a>
 #### Interrupts, polling, callbacks
@@ -391,7 +391,7 @@ Alternately, the USB components of [libopencm3]( https://github.com/libopencm3/l
 
 Given prior experience with [STM HAL (and LL) libraries](#ST_HAL_and_LL_libraries) --- by coincidence implementing USB on STM32L476 MCUs --- I wanted to avoid them at all cost. (Note that the HAL/STM32L476 success was pure hacking: I extracted a minimal subset of HAL necessary to compile and link, including some small additions such as a `malloc()` stub and a replacement for HAL's `systick` handler. The code was still huge and incomprehensible.) See [STM HAL (and LL) libraries](#ST_HAL_and_LL_libraries) for more, highly-opinionated, criticisms.
 
-I decided instead to use as a starting point a GitHub repository I later discovered was a copy of the older ST-provided "STM32_USB-FS-Device_Lib" source code distribution. Despite the fact the code was functional (after some small fixes), in retrospect this was a very bad decision. The code is, hands down, the second worst I have ever seen in my long career as a software developer. (The worst was a many thousands line long Commodore Basic program 100% comprised of spaghetti code `GOTO` statements. That the ST code is even in the same league is a significant although dubious accomplishment.)  Again, see [STM software](#st_software) for additional complaints.
+I decided instead to use as a starting point a GitHub repository I later discovered was a copy of the older ST-provided "STM32_USB-FS-Device_Lib" source code distribution. Despite the fact the code was functional (after some small fixes), in retrospect this was a very bad decision. The code is, hands down, the second worst I have ever seen in my long career as a software developer. (The worst was a many thousands line long Commodore Basic program 100% comprised of spaghetti code `GOTO` statements. That the ST code is even in the same league is a significant although dubious accomplishment.)  Again, see [ST software](#st_software) for additional complaints.
 
 Finally, in theory none of this analysis/hacking/porting should ever have been necessary. One would think a company the size of ST could document their hardware well enough that a competent programmer could write code to utilize it (and in fact would be interested in doing so, if for no other reason than to increase sales). Not so --- if interested see [STM hardware and documentation](#st_hardware_and_documentation) below for details. Also note that the STM32F103 USB subsystem documentation is better than many other ST attempts, and that evaluation of whether or not I'm a "competent programmer" is left to the reader.
 
@@ -499,7 +499,7 @@ Other problems in addition to the above USB peripheral ones include the fact tha
 
 
 <br> <a name="st_software"></a>
-### STM software
+### ST software
 
 <a name="ST_HAL_and_LL_libraries"></a>
 #### ST HAL (and LL) libraries

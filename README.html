@@ -119,7 +119,7 @@ int main()
 }
 </code></pre>
 
-<p>That&#8217;s it. Where&#8217;s usbd_desc.c (which doesn&#8217;t have any USB descriptors in it), usbd_cdc_interface.c, stm32f1xx_it.c, ad nauseum &#8212; all of which other libraries think application client coders should be require to implement/modify? (See <a href="#st_software">STM software</a>, below.) Sorry &#8230; they&#8217;re not needed here.</p>
+<p>That&#8217;s it. Where&#8217;s usbd_desc.c (which doesn&#8217;t have any USB descriptors in it), usbd_cdc_interface.c, stm32f1xx_it.c, ad nauseum &#8212; all of which other libraries think application client coders should be require to implement/modify? (See <a href="#st_software">ST software</a>, below.) Sorry &#8230; they&#8217;re not needed here.</p>
 
 <br>
 <br>
@@ -239,9 +239,9 @@ Code <a name="code_description"></a> snippets from the example, with brief addit
 
 <p>End main loop, end <code>main()</code> function.</p>
 
-<p><br> (&#8220;Not Long Enough, Want To Read More&#8221;) <a name="nle_want_to_read_more"></a></p>
+<p><br> <a name="nle_want_to_read_more"></a></p>
 
-<h3 id="nlewtrm">NLE;WTRM</h3>
+<h3 id="nlewtrmnotlongenoughwanttoreadmore">NLE;WTRM (&#8220;Not Long Enough, Want To Read More&#8221;)</h3>
 
 <p><a name="interrupts_polling_callbacks"></a></p>
 
@@ -432,7 +432,7 @@ Motivation for papoon_usb</h2>
 
 <p>Given prior experience with <a href="#ST_HAL_and_LL_libraries">STM HAL (and LL) libraries</a> &#8212; by coincidence implementing USB on STM32L476 MCUs &#8212; I wanted to avoid them at all cost. (Note that the HAL/STM32L476 success was pure hacking: I extracted a minimal subset of HAL necessary to compile and link, including some small additions such as a <code>malloc()</code> stub and a replacement for HAL&#8217;s <code>systick</code> handler. The code was still huge and incomprehensible.) See <a href="#ST_HAL_and_LL_libraries">STM HAL (and LL) libraries</a> for more, highly-opinionated, criticisms.</p>
 
-<p>I decided instead to use as a starting point a GitHub repository I later discovered was a copy of the older ST-provided &#8220;STM32_USB-FS-Device_Lib&#8221; source code distribution. Despite the fact the code was functional (after some small fixes), in retrospect this was a very bad decision. The code is, hands down, the second worst I have ever seen in my long career as a software developer. (The worst was a many thousands line long Commodore Basic program 100% comprised of spaghetti code <code>GOTO</code> statements. That the ST code is even in the same league is a significant although dubious accomplishment.) Again, see <a href="#st_software">STM software</a> for additional complaints.</p>
+<p>I decided instead to use as a starting point a GitHub repository I later discovered was a copy of the older ST-provided &#8220;STM32_USB-FS-Device_Lib&#8221; source code distribution. Despite the fact the code was functional (after some small fixes), in retrospect this was a very bad decision. The code is, hands down, the second worst I have ever seen in my long career as a software developer. (The worst was a many thousands line long Commodore Basic program 100% comprised of spaghetti code <code>GOTO</code> statements. That the ST code is even in the same league is a significant although dubious accomplishment.) Again, see <a href="#st_software">ST software</a> for additional complaints.</p>
 
 <p>Finally, in theory none of this analysis/hacking/porting should ever have been necessary. One would think a company the size of ST could document their hardware well enough that a competent programmer could write code to utilize it (and in fact would be interested in doing so, if for no other reason than to increase sales). Not so &#8212; if interested see <a href="#st_hardware_and_documentation">STM hardware and documentation</a> below for details. Also note that the STM32F103 USB subsystem documentation is better than many other ST attempts, and that evaluation of whether or not I&#8217;m a &#8220;competent programmer&#8221; is left to the reader.</p>
 
@@ -538,7 +538,7 @@ Other problems in addition to the above USB peripheral ones include the fact tha
 
 <p><br> <a name="st_software"></a></p>
 
-<h3 id="stmsoftware">STM software</h3>
+<h3 id="stsoftware">ST software</h3>
 
 <p><a name="ST_HAL_and_LL_libraries"></a></p>
 
