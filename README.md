@@ -6,8 +6,8 @@ papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
 
 
 
-<br>
-Contents  <a name="contents"></a>
+<br> <a name="contents"></a>
+Contents
 --------
 
 * [License](#license)
@@ -31,8 +31,8 @@ Contents  <a name="contents"></a>
 
 
 
-<br>
-License  <a name="license"></a>
+<br> <a name="license"></a>
+License
 -------
 
 papoon_usb: "Not Insane" USB library for STM32F103xx MCUs for STM MCUs
@@ -50,8 +50,8 @@ You should have received a copy of the [GNU General Public License](LICENSE.txt)
 
 
 
-<br>
-How to use papoon_usb <a name="how_to_use_papoon_usb"></a>
+<br> <a name="how_to_use_papoon_usb"></a>
+How to use papoon_usb
 ---------------------
 
 ### TL;DNR ("Too Long, Did Not Read") <a name="tldnr_too_long_did_not_read"></a>
@@ -283,8 +283,8 @@ Again, see the provided example USB class implementation files for use as templa
 
 
 
-<br>
-Example client applications <a name="example_client_applications"></a>
+<br> <a name="example_client_applications"></a>
+Example client applications
 ---------------------------
 
 Several example client applications are provided as templates for using papoon_usb in the [examples/blue_pill](examples/blue_pill) directory. As the name suggests, the are written for the ubiquitous "Blue Pill" STM32F103xx development board which has an application-controlled LED connected to the MCU's GPIO PA13 port (active low). Code driving the LED, along with the GPIO initialization in [usb_mcu_init.cxx](usb/usb_mcu_init.cxx), can be easily removed or modified for other hardware environments.
@@ -320,8 +320,8 @@ This USB MIDI demo sends a looped C major ascending scale to the host computer. 
 
 
 
-<br>
-Implementation of papoon_usb <a name="implementation_of_papoon_usb"></a>
+<br> <a name="implementation_of_papoon_usb"></a>
+Implementation of papoon_usb
 ----------------------------
 
 #### C++ <a name="cplusplus"></a>
@@ -373,8 +373,8 @@ See the regbits [README.md](https://github.com/thanks4opensource/regbits/blob/ma
 
 
 
-<br>
-Motivation for papoon_usb <a name="motivation_for_papoon_usb"></a>
+<br> <a name="motivation_for_papoon_usb"></a>
+Motivation for papoon_usb
 ----------------------------
 
 #### Background
@@ -401,8 +401,8 @@ Please feel free to make your own decisions regarding both the code quality the 
 
 
 
-<br>
-Insanity <a name="insanity"></a>
+<br> <a name="insanity"></a>
+Insanity
 ----------
 
 The following is highly opinionated editorial opinion, perusal of which is not in the least necessary for using or understanding papoon_usb. Those easily offended by extremely critical remarks directed toward well established and respected hardware and software organizations should likely skip reading it. Regardless, I stand by (and attempt to justify) the statements expressed below.
@@ -585,8 +585,8 @@ A single read, a single `&=` (note that the `|` operands are C++ constexpr; they
 
 
 
-<br>
-Further development <a name="further_development"></a>
+<br> <a name="further_development"></a>
+Further development
 -----------
 
 #### papoon_usb

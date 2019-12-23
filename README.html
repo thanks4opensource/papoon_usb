@@ -11,8 +11,8 @@
 <p><a name="description"></a>
 <strong>papoon_usb</strong> is a lightweight, efficient, cleanly-designed library for the USB Device peripheral in STMF103xx (and similar) MCUs. Its compiled binary size is approximately half that of the bloated, indirection-filled, spaghetti-code USB libraries on GitHub from ST and others; its performance boost is likely similar. Best of all, the code is &#8220;Not Insane&#8221; <a href="#not_insane">(1)</a> &#8212; or at least is as sane as reasonably possible given the craziness of the USB architecture and ST&#8217;s hardware implementation of it.</p>
 
-<h2 id="brcontentsanamecontentsa"><br>
-Contents <a name="contents"></a></h2>
+<h2 id="branamecontentsacontents"><br> <a name="contents"></a>
+Contents</h2>
 
 <ul>
 <li><a href="#license">License</a></li>
@@ -50,8 +50,8 @@ Contents <a name="contents"></a></h2>
 <li><a href="#further_development">Further development</a></li>
 </ul>
 
-<h2 id="brlicenseanamelicensea"><br>
-License <a name="license"></a></h2>
+<h2 id="branamelicensealicense"><br> <a name="license"></a>
+License</h2>
 
 <p>papoon_usb: &#8220;Not Insane&#8221; USB library for STM32F103xx MCUs for STM MCUs</p>
 
@@ -65,8 +65,8 @@ License <a name="license"></a></h2>
 
 <p>You should have received a copy of the <a href="LICENSE.txt">GNU General Public License</a> along with the papoon_usb program. If not, see <a href="https://www.gnu.org/licenses/gpl.html">https://www.gnu.org/licenses/gpl.html</a></p>
 
-<h2 id="brhowtousepapoon_usbanamehow_to_use_papoon_usba"><br>
-How to use papoon_usb <a name="how_to_use_papoon_usb"></a></h2>
+<h2 id="branamehow_to_use_papoon_usbahowtousepapoon_usb"><br> <a name="how_to_use_papoon_usb"></a>
+How to use papoon_usb</h2>
 
 <h3 id="tldnrtoolongdidnotreadanametldnr_too_long_did_not_reada">TL;DNR (&#8220;Too Long, Did Not Read&#8221;) <a name="tldnr_too_long_did_not_read"></a></h3>
 
@@ -318,8 +318,8 @@ Code <a name="code_description"></a> snippets from the example, with brief addit
 
 <p>Again, see the provided example USB class implementation files for use as templates for creating a new USB class.</p>
 
-<h2 id="brexampleclientapplicationsanameexample_client_applicationsa"><br>
-Example client applications <a name="example_client_applications"></a></h2>
+<h2 id="branameexample_client_applicationsaexampleclientapplications"><br> <a name="example_client_applications"></a>
+Example client applications</h2>
 
 <p>Several example client applications are provided as templates for using papoon_usb in the <a href="examples/blue_pill">examples/blue_pill</a> directory. As the name suggests, the are written for the ubiquitous &#8220;Blue Pill&#8221; STM32F103xx development board which has an application-controlled LED connected to the MCU&#8217;s GPIO PA13 port (active low). Code driving the LED, along with the GPIO initialization in <a href="usb/usb_mcu_init.cxx">usb_mcu_init.cxx</a>, can be easily removed or modified for other hardware environments.</p>
 
@@ -357,8 +357,8 @@ Example client applications <a name="example_client_applications"></a></h2>
 
 <p>This USB MIDI demo sends a looped C major ascending scale to the host computer. (&#8220;By pressing down a special key it plays a little melody.&#8221;) (Not really; code starts immediately and runs indefinitely.) The demo does not implement &#8220;MIDI IN&#8221; to the STM32F103 device. Source files: <a href="examples/blue_pill/midi.cxx">midi.cxx</a> and <a href="usb/usb_dev_midi.cxx">usb_dev_midi.cxx</a>. See <a href="#usb_standard">USB insanity</a>, below, regarding USB MIDI class standard.</p>
 
-<h2 id="brimplementationofpapoon_usbanameimplementation_of_papoon_usba"><br>
-Implementation of papoon_usb <a name="implementation_of_papoon_usb"></a></h2>
+<h2 id="branameimplementation_of_papoon_usbaimplementationofpapoon_usb"><br> <a name="implementation_of_papoon_usb"></a>
+Implementation of papoon_usb</h2>
 
 <h4 id="canamecplusplusa">C++ <a name="cplusplus"></a></h4>
 
@@ -411,8 +411,8 @@ rcc-&gt;cfgr /= Rcc::Cfgr::HPRE_DIV_64;   // set bit field, analogous to
 
 <p>See the regbits <a href="https://github.com/thanks4opensource/regbits/blob/master/README.md">README.md</a> and regbits_stm <a href="https://github.com/thanks4opensource/regbits_stm/blob/master/README.md">README.md</a> documentation for (much) more detail.</p>
 
-<h2 id="brmotivationforpapoon_usbanamemotivation_for_papoon_usba"><br>
-Motivation for papoon_usb <a name="motivation_for_papoon_usb"></a></h2>
+<h2 id="branamemotivation_for_papoon_usbamotivationforpapoon_usb"><br> <a name="motivation_for_papoon_usb"></a>
+Motivation for papoon_usb</h2>
 
 <h4 id="background">Background</h4>
 
@@ -436,8 +436,8 @@ Motivation for papoon_usb <a name="motivation_for_papoon_usb"></a></h2>
 
 <p>(1) (footnote from repository description <a href="#description">above</a>) &#8220;Papoon&#8221; and &#8220;Not Insane&#8221; are obscure, inside joke, references. My apologies.</p>
 
-<h2 id="brinsanityanameinsanitya"><br>
-Insanity <a name="insanity"></a></h2>
+<h2 id="branameinsanityainsanity"><br> <a name="insanity"></a>
+Insanity</h2>
 
 <p>The following is highly opinionated editorial opinion, perusal of which is not in the least necessary for using or understanding papoon_usb. Those easily offended by extremely critical remarks directed toward well established and respected hardware and software organizations should likely skip reading it. Regardless, I stand by (and attempt to justify) the statements expressed below.</p>
 
@@ -614,8 +614,8 @@ volatile
 
 <p>A single read, a single <code>&amp;=</code> (note that the <code>|</code> operands are C++ constexpr; they collapse to a single value at compile time), a single <code>^</code>, and a final write. No branching. (Also: This is a C++ inline method, so is as efficient as a C macro.) This code has been shown to work, but I welcome any contrary evidence that the hardware &#8220;prefers&#8221; the bits be toggled one at a time.</p>
 
-<h2 id="brfurtherdevelopmentanamefurther_developmenta"><br>
-Further development <a name="further_development"></a></h2>
+<h2 id="branamefurther_developmentafurtherdevelopment"><br> <a name="further_development"></a>
+Further development</h2>
 
 <h4 id="papoon_usb">papoon_usb</h4>
 
