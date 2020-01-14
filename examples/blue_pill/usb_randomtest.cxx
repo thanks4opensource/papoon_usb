@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -125,10 +125,7 @@ void init()
     gpioc->bsrr = Gpio::Bsrr::BS13;  // turn off user LED by setting high
 
 #ifdef USB_DEV_INTERRUPT_DRIVEN
-      arm::nvic->Iser[static_cast<uint32_t>
-                                 (stm32f103xb::NvicIrqn::USB_LP_CAN1_RX0) >> 5]
-    = 1 << (  static_cast<uint32_t>(stm32f103xb::NvicIrqn::USB_LP_CAN1_RX0)
-            & 0x1f                                                         );
+    arm::nvic->iser.set(arm::NvicIrqn::USB_LP_CAN1_RX0);
 #endif
 
 }
@@ -157,8 +154,16 @@ void            *user_data)
 {
     gpioc->bsrr = Gpio::Bsrr::BR13;  // set low to turn on user LED
 
-    uint16_t    recv_len = usb_dev.recv(endpoint, down_buf);
+#ifdef USB_DEV_NO_BUFFER_RECV_SEND
+    uint16_t    recv_len = usb_dev.recv_lnth(endpoint);
 
+    for (uint16_t ndx = 0 ; ndx < (recv_len + 1) >> 1 ; ++ndx)
+        reinterpret_cast<uint16_t*>(down_buf)[ndx] = usb_dev.read(endpoint, ndx);
+
+    usb_dev.recv_done(endpoint);
+#else
+    uint16_t    recv_len = usb_dev.recv(endpoint, down_buf);
+#endif
     random_test.recv_sync(down_buf, recv_len, USB_RANDOMTEST_SYNC_LENGTH);
 
     gpioc->bsrr = Gpio::Bsrr::BS13;  // set high to turn off user LED
@@ -172,7 +177,16 @@ void            *user_data)
 {
     gpioc->bsrr = Gpio::Bsrr::BR13;  // low to turn on user LED
 
+#ifdef USB_DEV_NO_BUFFER_RECV_SEND
+    uint16_t    recv_len = usb_dev.recv_lnth(endpoint);
+
+    for (uint16_t ndx = 0 ; ndx < (recv_len + 1) >> 1 ; ++ndx)
+        reinterpret_cast<uint16_t*>(down_buf)[ndx] = usb_dev.read(endpoint, ndx);
+
+    usb_dev.recv_done(endpoint);
+#else
     uint16_t    recv_len = usb_dev.recv(endpoint, down_buf);
+#endif
 
     if (!random_test.recv(down_buf, recv_len))
         while (true)
@@ -191,8 +205,17 @@ void            *user_data)
 
     uint16_t    send_len = random_test.send(up_buf);
 
-    if (send_len)
+    if (send_len) {
+#ifdef USB_DEV_NO_BUFFER_RECV_SEND
+        for (uint16_t ndx = 0 ; ndx < (send_len + 1) >> 1 ; ++ndx)
+            usb_dev.writ(endpoint                                ,
+                         reinterpret_cast<uint16_t*>(up_buf)[ndx],
+                         ndx                                     );
+        usb_dev.send(endpoint, send_len);
+#else
         usb_dev.send(endpoint, up_buf, send_len);
+#endif
+    }
 
     gpioc->bsrr = Gpio::Bsrr::BS13;  // set high to turn off user LED
 }

@@ -18,42 +18,15 @@
 // <https://www.gnu.org/licenses/gpl.html>
 
 
-#include <stdint.h>
+#ifndef USB_DEV_CDC_ACM_H
+#define USB_DEV_CDC_ACM_H
 
-#include <core_cm3.hxx>
+#define CDC_ENDPOINT_OUT    3
+#define CDC_ENDPOINT_IN     1
 
-#include <stm32f103xb.hxx>
+#define CDC_OUT_DATA_SIZE   64
+#define CDC_IN_DATA_SIZE    64
 
-#include <usb_dev_simple.hxx>
+#include <usb_dev.h>
 
-#include <usb_randomtest.hxx>
-
-
-using namespace stm32f103xb;
-using namespace stm32f10_12357_xx;
-
-
-UsbDevSimple        usb_dev;
-
-uint8_t             recv_buf[UsbDevSimple::OUT_ENDPOINT_MAX_PACKET],
-                    send_buf[UsbDevSimple:: IN_ENDPOINT_MAX_PACKET];
-
-
-
-int main()
-{
-    usb_randomtest::init();
-
-    if (!usb_dev.init())
-    {
-        gpioc->bsrr = Gpio::Bsrr::BR13;  // turn on user LED by setting low
-        while (true)         // hang
-             asm("nop");
-    }
-
-    usb_randomtest::wait_configured();
-
-    usb_randomtest::run(UsbDevSimple::OUT_ENDPOINT,
-                        UsbDevSimple::IN_ENDPOINT );
-
-}
+#endif  // ifndef USB_DEV_CDC_ACM_H

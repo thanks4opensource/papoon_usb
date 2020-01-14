@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -66,10 +66,7 @@ int main()
     gpioc->bsrr = Gpio::Bsrr::BS13;  // turn off user LED by setting high
 
 #ifdef USB_DEV_INTERRUPT_DRIVEN
-      arm::nvic->Iser[static_cast<uint32_t>
-                                 (stm32f103xb::NvicIrqn::USB_LP_CAN1_RX0) >> 5]
-    = 1 << (  static_cast<uint32_t>(stm32f103xb::NvicIrqn::USB_LP_CAN1_RX0)
-            & 0x1f                                                            );
+    arm::nvic->iser.set(arm::NvicIrqn::USB_LP_CAN1_RX0);
 #endif
 
     if (!usb_dev.init())

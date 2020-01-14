@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -22,14 +22,14 @@
 #define USB_DEV_HXX
 
 #define USB_DEV_MAJOR_VERSION   1
-#define USB_DEV_MINOR_VERSION   0
-#define USB_DEV_MICRO_VERSION   1
+#define USB_DEV_MINOR_VERSION   2
+#define USB_DEV_MICRO_VERSION   0
 
 #include <stm32f103xb.hxx>
 
 #if STM32F103XB_MAJOR_VERSION == 1
-#if STM32F103XB_MINOR_VERSION  < 0
-#warning STM32F103XB_MINOR_VERSION < 0 with required STM32F103XB_MAJOR_VERSION == 1
+#if STM32F103XB_MINOR_VERSION  < 2
+#warning STM32F103XB_MINOR_VERSION >= 2 with required STM32F103XB_MAJOR_VERSION == 1
 #endif
 #else
 #error STM32F103XB_MAJOR_VERSION != 1
@@ -44,12 +44,12 @@ class UsbDev {
 
     // client application code optinally uses device_state() accessor to
     // test if "CONFIGURED", indicating that USB device has been fully
-    // enumerated by host and peripheral is ready send and receive data
+    // enumerated by host and peripheral is ready to send and receive data
     enum class DeviceState {
-        CONSTRUCTED,
-        INITIALIZED,
-        RESET      ,
-        ADDRESSED  ,
+        CONSTRUCTED = 0,
+        INITIALIZED    ,
+        RESET          ,
+        ADDRESSED      ,
         CONFIGURED
     };
 
@@ -91,7 +91,10 @@ class UsbDev {
 
     // USB standard: Bit in endpoint descriptor address byte. If set, endpoint
     //   is IN; if clear is OUT (host-centric nomenclature)
-    static const uint8_t    ENDPOINT_DIR_IN      = 0x80;
+    // Endpoint numbers aka addresses limited to 4 bits. Other bits reserverd,
+    //   should be set to zero
+    static const uint8_t    ENDPOINT_DIR_IN      = 0x80,
+                            ENDPOINT_ADDR_MASK   = 0x0F;
 
 
 
@@ -102,6 +105,8 @@ class UsbDev {
         _recv_callbacks       {{0, 0}                   },
         _send_callbacks       {{0, 0}                   },
 #endif
+        _epaddr2eprn          {                         },
+        _eprn2epaddr          {                         },
         _send_info            (                         ),
         _recv_info            (                         ),
         _setup_packet         (0                        ),
@@ -146,10 +151,12 @@ class UsbDev {
     //   MCU peripheral, clock, etc. configuration/initialization.
     bool    init();
 
+#ifdef USB_DEV_FORCE_RESET_CAPABILITY
     // Experimental
     // Not useful, doesn't reset USB bus (pull D+ line low) to indicate
     //   reset to host and cause re-enumeration
     void    force_reset();
+#endif
 
     // see "enum class DeviceState", above
     DeviceState     device_state() const { return _device_state ; }
@@ -162,7 +169,6 @@ class UsbDev {
     // endpoint number N in USB endpoint descriptor) and send (USB standard
     // host-centric "IN", endpoint number 0x80|N in USB endpoint descriptor)
     //
-
 
 #ifndef USB_DEV_INTERRUPT_DRIVEN
     // Client application must call at high frequency  during USB enumeration
@@ -179,14 +185,14 @@ class UsbDev {
     }
 
     // convenience routine for parsing poll() return value
-    static uint32_t poll_recv_ready(
+    static constexpr uint32_t poll_recv_ready(
     const uint8_t   endpoint)
     {
         return 1 << endpoint;
     }
 
     // convenience routine for parsing poll() return value
-    static uint32_t poll_send_ready(
+    static constexpr uint32_t poll_send_ready(
     const uint8_t   endpoint)
     {
         return 1 << (endpoint + 16);
@@ -208,7 +214,7 @@ class UsbDev {
             callback(endpoint, user_data);
     }
 
-    // callback will be called endpoint is available to send data to host
+    // callback will be if called endpoint is ready to send data to host
     void register_send_callback(
     void        (*callback)(const uint8_t,
                             void*         ),
@@ -227,20 +233,19 @@ class UsbDev {
     uint16_t endpoint_recv_bufsize(
     const uint8_t   endpoint)
     const {
-        return _endpoints[endpoint].max_recv_packet;
+        return _endpoints[_epaddr2eprn[endpoint]].max_recv_packet;
     }
 
     // accessor for information parsed from USB endpoint descriptor
     uint16_t endpoint_send_bufsize(
     const uint8_t   endpoint)
     const {
-        return _endpoints[endpoint].max_send_packet;
+        return _endpoints[_epaddr2eprn[endpoint]].max_send_packet;
     }
 
 
     // Accessors for endpoint states
     //
-
     // must be volatile for #ifdef USB_DEV_INTERRUPT_DRIVEN
     uint16_t    recv_readys() const volatile { return _recv_readys; }
     uint16_t    send_readys() const volatile { return _send_readys; }
@@ -252,18 +257,152 @@ class UsbDev {
             { return _send_readys & endpoints; }
 
 
+    // Endpoint data transfers
+    //
+    //
+    // STM32F10xx USB data is arranged internally in memory according to the
+    // following layout:
+    //
+    // A USB data packet containing N bytes:
+    //    b0, b1, b2, b3, b4, ... bN-1
+    //
+    // is arranged in STM32F10xx USB starting at "addr" as:
+    //    addr      b0 b1 xx xx
+    //    addr+4    b2 b3 xx xx
+    //    addr+8    b4 b5 xx xx
+    //    ...       .. .. .. ..
+    // (where "xx" are unused/"don't care" values).
+    //
+    // As a consequence, data must be written to USB memory using the following
+    // (or equivalent) methods:
+    //    uint8_t    data    = {b0, b1, b2, b3, b4};
+    //    uint16_t*  source  = reinterpret_cast<uint16_t*>(data + 2);
+    //    uint32_t*  address = base_address + 4;
+    //    *address = *data;
+    // and similar for reading data from USB memory. See writ_pma_data() and
+    // read_pma_data() in the usb_dev.cxx implementation file for examples
+    // using both CPU and DMA.
+    //
+    // UsbDev's send(uint8_t, const uint8_t* const, const uint16_t)
+    // and recv(uint8_t, uint8_t* const) methods, along with
+    // read(const uint8_t, const uint8_t) and
+    // writ(const uint8_t, const uint16_t, const uint8_t)
+    // handle this correctly. Note that the data_ndx argument to both read()
+    // and writ() must be specified in terms of uint16_t offsets, i.e. the
+    // above example could be done via:
+    //    uint16_t  data = (b2 << 8) | b3;   // little-endian
+    //    usb_dev.writ(endpoint, data, 1);   // address known from endpoint
+    //
+    // If using raw buffer addresses obtained via send_buf() and recv_buf(),
+    // client code must do the above correctly. All of these UsbDev methods,
+    // with the exception of the the send() and recv() versions which take
+    // uint8_t* arguments, are intended for client applications which wish
+    // to avoid data copying by writing into, or reading data from, the above
+    // internal memory layout. A particular use case would be DMA directly
+    // from or to another hardware peripheral, such as USART for a
+    // canonical USB CDC-ACM class USB-to-serial bridge. See the writ_pma_data()
+    // and read_pma_data() implementations for DMA setup requirements.
+    //
+    // If not using send() and recv() versions which copy client data,
+    // the USB_DEV_NO_BUFFER_RECV_SEND pre-processor macro can be defined
+    // to eliminate their compilation and reduce binary code size.
+    //
+
+#ifndef USB_DEV_NO_BUFFER_RECV_SEND
     // no checking of params -- caller must guarantee valid
-    //   endpoint_number and buffer
-    uint16_t recv(const uint8_t         endpoint_number,
-                        uint8_t* const  buffer         );
+    //   endpoint and buffer
+    uint16_t recv(const uint8_t         endpoint,
+                        uint8_t* const  buffer  );
 
     // no checking of params -- caller must guarantee valid
     //   endpoint_number, data, and length
-    bool send(const uint8_t         endpoint_number,
-              const uint8_t* const  data           ,
-              const uint16_t        length         );
+    bool send(const uint8_t         endpoint,
+              const uint8_t* const  data    ,
+              const uint16_t        length  );
+#endif
 
+    // for use with direct access to hardware USB buffers, below
+    //
+    uint16_t recv_lnth(
+    const uint8_t   endpoint)   // no check for valid endpoint
+    {
+        if (!(_recv_readys & (1 << endpoint)))
+            return 0;
 
+        return  _pma_descs
+               .eprn(_epaddr2eprn[endpoint])
+               .count_rx.shifted(  stm32f103xb
+                                 ::UsbBufDesc
+                                 ::CountRx
+                                 ::COUNT_0_SHFT)          ;
+    }
+
+    bool recv_done(
+    const uint8_t   endpoint)   // no check for valid endpoint
+    {
+        if (!(_recv_readys & (1 << endpoint)))
+            return false;
+
+        _recv_readys &= ~(1 << endpoint);
+
+          stm32f103xb
+        ::usb
+        ->eprn(_epaddr2eprn[endpoint])
+         .stat_rx(stm32f103xb::Usb::Epr::STAT_RX_VALID);
+
+        return true;
+    }
+
+    bool send(  // no check for valid endpoint or length
+    const uint8_t   endpoint,
+    const uint16_t  length  )
+    {
+        if (!(_send_readys & (1 << endpoint)))
+            return false;
+
+          _pma_descs.eprn(_epaddr2eprn[endpoint]).count_tx
+        = stm32f103xb::UsbBufDesc::CountTx::count_0(length);
+
+          stm32f103xb
+        ::usb
+        ->eprn(_epaddr2eprn[endpoint])
+         .stat_tx(stm32f103xb::Usb::Epr::STAT_TX_VALID);
+
+        _send_readys &= ~(1 << endpoint);
+
+        return true;
+    }
+
+    // direct access to hardware USB buffers
+    //
+    uint16_t read(              // no checking of parameters
+    const uint8_t   endpoint,
+    const uint8_t   data_ndx)   // uint16_t index, i.e. byte index divided by 2
+    {
+        return *(_endpoints[_epaddr2eprn[endpoint]].recv_pma + data_ndx);
+    }
+
+    void writ(                  // no checking of parameters
+    const uint8_t   endpoint,
+    const uint16_t  data    ,
+    const uint8_t   data_ndx)   // uint16_t index, i.e. byte index divided by 2
+    {
+        *(_endpoints[_epaddr2eprn[endpoint]].send_pma + data_ndx) = data;
+    }
+
+    // e.g. for DMA from/to peripheral
+    //
+    volatile uint32_t* recv_buf(
+    const uint8_t   endpoint)
+    {
+        return _endpoints[_epaddr2eprn[endpoint]].recv_pma;
+    }
+
+    volatile uint32_t* send_buf(
+    const uint8_t   endpoint)
+    {
+        return _endpoints[_epaddr2eprn[endpoint]].send_pma;
+    }
 
 
   protected:
@@ -272,34 +411,12 @@ class UsbDev {
     // configuration descriptor(s). Must be saved for subsequent execution
     // of reset() via USB request from host.
     struct Endpoint {
-#undef CONSTEXPR_CONSTRUCT_USB_DEV_ENDPOINT_WITH_USB_EPR_MSKD_T
-#ifdef CONSTEXPR_CONSTRUCT_USB_DEV_ENDPOINT_WITH_USB_EPR_MSKD_T
-    /*
-        Can't do this.
-        Breaks arm-none-eabi-g++
-               8.2.1 20181213 (release) [gcc-8-branch revision 267074]
-        with:
-        internal compiler error: in verify_ctor_sanity, at cp/constexpr.c:2803
-        trying to constexpr construct UsbDev with
-            :   _endpoints       ({}                       ),
-        below
-    */
-        constexpr
-        Endpoint()
-        :   type           (stm32f103xb::Usb::Epr::EP_TYPE_BULK),
-            max_recv_packet(0                                  ),
-            max_send_packet(0                                  )
-        {}
-
-        stm32f103xb::Usb::Epr::mskd_t       type           ;
-#endif
-
-        // maximum USB tranfer sizes
-        uint16_t    max_recv_packet,
-                    max_send_packet;
-#ifndef CONSTEXPR_CONSTRUCT_USB_DEV_ENDPOINT_WITH_USB_EPR_MSKD_T
-        uint8_t     type           ;  // really stm32f103xb::Usb::Epr::mskd_t
-#endif
+        uint32_t        *recv_pma       , // buffer, CPU addressing
+                        *send_pma       ; //   "   ,  "      "
+        uint16_t         max_recv_packet, // maximum USB tranfer size
+                         max_send_packet; //    "     "     "      "
+        DescriptorType   type          ;  // convert to Usb::Epr::mskd_t with
+                                          // _DESC_EP_TYPE_TO_EPR_EP_TYPE[]
     };
 
 
@@ -486,43 +603,59 @@ class UsbDev {
 
     void    set_address(const uint8_t   address);
 
-    void    writ_pma_data(const uint8_t* const  data,
-                          const uint16_t        addr,
-                          const uint16_t        size),
-            read_pma_data(      uint8_t* const  data,
-                          const uint16_t        addr,
-                          const uint16_t        size);
+    void    writ_pma_data(const uint8_t*  const     data,
+                                uint32_t* const     addr,
+                          const uint16_t            size),
+            read_pma_data(      uint8_t*  const     data,
+                          const uint32_t* const     addr,
+                          const uint16_t            size);
 
 
     // fake endpoint count of 1 okay, only using  statically-checked EPRN<0>()
-      stm32f103xb
-    ::UsbPmaDescs<
-      1, _BTABLE_OFFSET>        _pma_descs                              ;
+    stm32f103xb ::UsbPmaDescs<1, _BTABLE_OFFSET>    _pma_descs;
 
+    // indexed by ST endpoint register (Usb::Epr, UsbBufDesc, UsbPmaDescs)
     Endpoint                    _endpoints     [  stm32f103xb
-                                                    ::Usb
-                                                    ::NUM_ENDPOINT_REGS];
+                                                ::Usb
+                                                ::NUM_ENDPOINT_REGS];
+
 #ifdef USB_DEV_ENDPOINT_CALLBACKS
       EndpointCallback          _recv_callbacks[  stm32f103xb
                                                 ::Usb
-                                                ::NUM_ENDPOINT_REGS]    ,
+                                                ::NUM_ENDPOINT_REGS],
                                 _send_callbacks[  stm32f103xb
                                                 ::Usb
-                                                ::NUM_ENDPOINT_REGS]    ;
+                                                ::NUM_ENDPOINT_REGS];
 #endif
-      DataInfo<const uint8_t*>  _send_info                              ;
-      DataInfo<      uint8_t*>  _recv_info                              ;
-      SetupPacket*              _setup_packet                           ;
-      DeviceState               _device_state                           ;
-      Status                    _status                                 ;
-      uint16_t                  _recv_readys                            ,
-                                _send_readys                            ,
-                                _send_readys_pending                    ,
-                                _last_send_size                         ;
-      uint8_t                   _num_endpoints                          ,
-                                _current_configuration                  ,
-                                _current_interface                      ,
-                                _pending_set_addr                       ;
+
+      // mappings between endpoint address as per USB descriptor
+      // and ST peripheral endpoint registers (Usb::Epr) and
+      // pseudo-registers (UsbPmaDescs/UsbBufDesc in PMA memory)
+      //
+                                // USB endpoint descriptor numbers and ST regs'
+                                // Istr::EP_ID and Epr::EA fields are 4 bits wide
+      uint8_t                   _epaddr2eprn   [ENDPOINT_ADDR_MASK + 1];
+
+      uint8_t                   _eprn2epaddr   [  stm32f103xb
+                                                ::Usb
+                                                ::NUM_ENDPOINT_REGS   ];
+
+      DataInfo<const uint8_t*>  _send_info            ;
+      DataInfo<      uint8_t*>  _recv_info            ;
+      SetupPacket*              _setup_packet         ;
+      DeviceState               _device_state         ;
+      Status                    _status               ;
+
+                                // bit N indicates USB endpoint descriptor addr
+      uint16_t                  _recv_readys          ,
+                                _send_readys          ,
+                                _send_readys_pending  ;
+
+      uint16_t                  _last_send_size       ;
+      uint8_t                   _num_endpoints        ,
+                                _current_configuration,
+                                _current_interface    ,
+                                _pending_set_addr     ;
 };  // class UsbDev
 
 } // namespace stm32f10_12357_xx

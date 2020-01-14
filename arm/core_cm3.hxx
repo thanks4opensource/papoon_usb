@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -26,6 +26,20 @@
 #include <stdint.h>
 
 #include <regbits.hxx>
+
+
+#if REGBITS_MAJOR_VERSION == 1
+#if REGBITS_MINOR_VERSION  < 0
+#warning REGBITS_MINOR_VERSION < 0 with required REGBITS_MAJOR_VERSION == 1
+#endif
+#else
+#error REGBITS_MAJOR_VERSION != 1
+#endif
+
+#define ARM_CORE_CM3_MAJOR_VERSION  1
+#define ARM_CORE_CM3_MINOR_VERSION  0
+#define ARM_CORE_CM3_MICRO_VERSION  1
+
 
 namespace arm {
 
@@ -88,24 +102,60 @@ struct SysTick {
 static_assert(sizeof(SysTick) == 16, "sizeof(SysTick) != 16");
 
 
+enum class NvicIrqn;
+
+
 struct Nvic {
     static const uint8_t    NUM_INTERRUPT_REGS =     8,
                             NUM_PRIORITY_REGS    = 240;
 
-    volatile uint32_t   Iser  [NUM_INTERRUPT_REGS],
-                        _rsrv0[                24],
-                        Icer  [NUM_INTERRUPT_REGS],
-                        _rsrv1[                24],
-                        Ispr  [NUM_INTERRUPT_REGS],
-                        _rsrv2[                24],
-                        Icpr  [NUM_INTERRUPT_REGS],
-                        _rsrv3[                24],
-                        Iabr  [NUM_INTERRUPT_REGS],
-                        _rsrv4[                56],
-                        Ip    [NUM_PRIORITY_REGS ],
-                        _rsrv5[               644],
-                        Stir                      ;
-};   // struct Nvic};    // struct Nvic
+    struct IntrptRegs {
+        void set(
+        NvicIrqn    irqn)
+        {
+               _interrupts[static_cast<unsigned>(irqn) >> 5]
+            |= (1 << (static_cast<unsigned>(irqn) & 0x1f)  );
+        }
+
+        bool get(
+        NvicIrqn    irqn)
+        {
+            return   _interrupts[static_cast<unsigned>(irqn) >> 5]
+                   & (1 << (static_cast<unsigned>(irqn) & 0x1f)  );
+        }
+
+        uint32_t bits(
+        NvicIrqn    irqn)
+        {
+            return _interrupts[static_cast<unsigned>(irqn) >> 5];
+        }
+
+        volatile uint32_t   _interrupts[NUM_INTERRUPT_REGS];
+    };  // struct IntrptRegs
+
+
+    public:  IntrptRegs     iser          ;
+    private: uint32_t       _reserved0[24];
+
+    public:  IntrptRegs     icer          ;
+    private: uint32_t       _reserved1[24];
+
+    public:  IntrptRegs     ispr          ;
+    private: uint32_t       _reserved2[24];
+
+    public:  IntrptRegs     icp3          ;
+    private: uint32_t       _reserved3[24];
+
+    public:  IntrptRegs     iab4          ;
+    private: uint32_t       _reserved4[56];
+
+    public:
+    volatile uint8_t    Ip       [NUM_PRIORITY_REGS];
+    volatile uint32_t   _reserved[              644],
+                        Stir                        ;
+
+};   // struct Nvic
+static_assert(sizeof(Nvic) == 0xE04, "sizeof(Nvic) != 0xE04");
 
 
 

@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //

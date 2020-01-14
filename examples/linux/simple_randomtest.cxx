@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -238,10 +238,12 @@ int     signum)
 
     if (signum != 0) {
         libusb_release_interface(device_handle, 0);
+#if 0  // this hangs if exiting because random check failure
         libusb_close(device_handle);
+#endif
         exit(signum);
     }
-}
+}   // report(
 
 
 void report(
@@ -328,7 +330,8 @@ struct libusb_transfer  *transfer)
 
     if (random_test.synced()) {
         if (!random_test.recv(up_buf, transfer->actual_length)) {
-            std::cerr << "Data error in up packet"
+            std::cerr << "Data error in up packet  actual_length: "
+                      << transfer->actual_length
                       << std::endl;
             report(-1, __LINE__);
         }

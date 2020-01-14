@@ -20,79 +20,85 @@
 
 #include <stdint.h>
 
-#include <core_cm3.hxx>
+#include <stm32f103xb.h>
+#include <core_cm3.h>
 
-#include <stm32f103xb.hxx>
+#include <usb_mcu_init.h>
 
-#include <bin_to_hex.hxx>
-#include <sys_tick_timer.hxx>
+#include <usb_dev_cdc_acm.h>
 
-#include <usb_dev.hxx>
-
-#include <usb_mcu_init.hxx>
-
-
-
-
-using namespace stm32f103xb;
-using namespace stm32f10_12357_xx;
-
-
-extern UsbDev   usb_dev;
-
-
-arm::SysTickTimer   sys_tick_timer;
-
-static const uint32_t   CPU_HZ           = 72000000,
-                        LED_DELAY_TICK   = CPU_HZ / 50; // 0.020 seconds
 
 
 #ifdef USB_DEV_INTERRUPT_DRIVEN
-extern "C" void USB_LP_CAN1_RX0_IRQHandler()
+void USB_LP_CAN1_RX0_IRQHandler()
 {
-    usb_dev.interrupt_handler();
+    usb_dev_interrupt_handler();
 }
 #endif
 
 
 
-namespace usb_echo {
 
-void init()
+void usb_echo_init()
 {
-    usb_dev.serial_number_init();  // do before mcu_init() clock speed breaks
+    usb_dev_serial_number_init();  // do before mcu_init() clock speed breaks
 
-    usb_mcu_init ();
-    usb_gpio_init();
-
-    sys_tick_timer.init();
-
-    gpioc->bsrr = Gpio::Bsrr::BS13;  // turn off user LED by setting high
+    usb_mcu_init();
 
 #ifdef USB_DEV_INTERRUPT_DRIVEN
-    arm::nvic->iser.set(arm::NvicIrqn::USB_LP_CAN1_RX0);
+    NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
 #endif
 
 }
 
 
-void wait_configured()
+void usb_echo_wait_configured()
 {
-    gpioc->bsrr = Gpio::Bsrr::BR13;  // turn on user LED by setting low
-
-    while (usb_dev.device_state() != UsbDev::DeviceState::CONFIGURED)
+    while (usb_dev_device_state() != CONFIGURED)
 #ifndef USB_DEV_INTERRUPT_DRIVEN
-        usb_dev.poll();
+        usb_dev_poll();
 #else
         asm("nop");
 #endif
-
-    gpioc->bsrr = Gpio::Bsrr::BS13;  // set high to turn off user LED
 }
 
 
 
-void run(
+static char hex(
+const uint8_t   nibble)
+{
+    return '0' + nibble + (nibble > 9 ? 'a' - ':' : 0);
+}
+
+static void byte(
+const uint8_t    byte     ,
+const uint8_t    position ,
+  char      *hex_chars)
+{
+    hex_chars[position    ] = hex(byte >> 4 );
+    hex_chars[position + 1] = hex(byte  & 0x0f);
+}
+
+static char* bin_to_hex_uint16(
+const uint16_t   bin,
+      char      *hex)
+{
+    byte(bin >>    8, 0, hex);
+    byte(bin  & 0xff, 2, hex);
+    return hex;
+}
+
+static const char* bin_to_hex_uint8(
+const uint8_t    bin,
+      char      *hex)
+{
+    byte(bin, 0, hex);
+    return hex;
+}
+
+
+
+void usb_echo_run(
       uint8_t       *recv_buf  ,
       uint8_t       *send_buf  ,
       uint8_t        send_max  ,
@@ -103,28 +109,20 @@ const uint8_t        send_endpt)
                 msg_count = 0,
                 send_len  = 0;
 
-    while (true) {
-        if (   !gpioc->odr.any(Gpio::Odr::ODR13)
-            && sys_tick_timer.elapsed32() > LED_DELAY_TICK)
-            gpioc->bsrr = Gpio::Bsrr::BS13;  // set high to turn off user LED
-
+    while (1) {
 #ifndef USB_DEV_INTERRUPT_DRIVEN
-        usb_dev.poll();
+        usb_dev_poll();
 #endif
-        if (recv_len = usb_dev.recv(recv_endpt, recv_buf)) {
-            gpioc->bsrr = Gpio::Bsrr::BR13;  // set low turn on user LED
-            sys_tick_timer.begin32();
-
+        if (recv_len = usb_dev_recv(recv_endpt, recv_buf)) {
             uint8_t     recv_ndx  = 0,
+
                         sub_count = 0;
             while (recv_ndx < recv_len) {
-                bitops::BinToHex::uint16(msg_count,
-                                         reinterpret_cast<char*>(send_buf));
+                bin_to_hex_uint16(msg_count, (char*)send_buf);
                 send_buf[4] = ' ';
                 send_len    = 5  ;
 
-                bitops::BinToHex::uint8(sub_count++,
-                                        reinterpret_cast<char*>(send_buf + 5));
+                bin_to_hex_uint8(sub_count++, (char*)(send_buf + 5));
                 send_buf[7] = ' ';
                 send_len    = 8  ;
 
@@ -132,21 +130,21 @@ const uint8_t        send_endpt)
                     send_buf[send_len++] = recv_buf[recv_ndx++];
                 send_buf[send_len++] = '\n';
 
-                while (!usb_dev.send(send_endpt, send_buf, send_len))
+                while (!usb_dev_send(send_endpt, send_buf, send_len))
 #ifdef USB_DEV_INTERRUPT_DRIVEN
                     asm("wfi");
 #else
-                    usb_dev.poll();
+                    usb_dev_poll();
 #endif
 
                 if (send_len == 64)
                     // exactly IN endpoint size
                     // have to send zero-length xfer to let host know is end
-                    while (!usb_dev.send(send_endpt, send_buf, 0))
+                    while (!usb_dev_send(send_endpt, send_buf, 0))
 #ifdef USB_DEV_INTERRUPT_DRIVEN
                         asm("wfi");
 #else
-                        usb_dev.poll();
+                        usb_dev_poll();
 #endif
 
             }
@@ -154,5 +152,3 @@ const uint8_t        send_endpt)
         }
     }
 }
-
-}  // namespace usb_echo

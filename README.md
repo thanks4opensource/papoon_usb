@@ -37,7 +37,7 @@ License
 
 papoon_usb: "Not Insane" USB library for STM32F103xx MCUs for STM MCUs
 
-Copyright (C) 2019 Mark R. Rubin
+Copyright (C) 2019,2020 Mark R. Rubin
 
 This file is part of papoon_usb.
 
@@ -103,7 +103,7 @@ Simple example <a name="simple_example"></a> of client application, using USB CD
         }
     }
 
-That's it. Where's usbd_desc.c (which doesn't have any USB descriptors in it),  usbd_cdc_interface.c, stm32f1xx_it.c, ad nauseum --- all of which other libraries think application client coders should be require to implement/modify? (See [ST software](#st_software), below.)  Sorry ... they're not needed here.
+That's it. Where's `usbd_desc.c` (which doesn't contain any USB descriptors),  `usbd_cdc_interface.c`, `stm32f1xx_it.c`, ad nauseum --- all of which other libraries think application client coders should be required to implement/modify? (See [ST software](#st_software), below.)  Sorry: They're not needed here.
 
 <br>
 <br>
@@ -227,7 +227,7 @@ papoon_usb can be used in any of four modes chosen from a 2x2 configuration matr
 
 These are controlled by defining (or not) one or both of two macros: `USB_DEV_INTERRUPT_DRIVEN` and `USB_DEV_ENDPOINT_CALLBACKS`.
 
-In `USB_DEV_INTERRUPT_DRIVEN` mode, client code must implement an ARM NVIC interrupt handler function:
+In `USB_DEV_INTERRUPT_DRIVEN` mode, client code must implement an ARM NVIC interrupt handler:
 
     extern "C" void USB_LP_CAN1_RX0_IRQHandler()
     {
@@ -236,21 +236,33 @@ In `USB_DEV_INTERRUPT_DRIVEN` mode, client code must implement an ARM NVIC inter
 
 and enable it via code such as:
 
-          arm::nvic->Iser[static_cast<uint32_t>(stm32f103xb::NvicIrqn::USB_LP_CAN1_RX0) >> 5]
-        = 1 << (static_cast<uint32_t>(stm32f103xb::NvicIrqn::USB_LP_CAN1_RX0) & 0x1f);
+        arm::nvic->iser.set(arm::NvicIrqn::USB_LP_CAN1_RX0);
 
-(or an equivalent ARM/ST function or macro) (see [regbits future work](#regbits_future_work), below).
+(using C++ with `regbits`'s [core_cm3.hxx](arm/core_cm3.hxx)) or:
 
-In non-`USB_DEV_INTERRUPT_DRIVEN` (i.e. polled) mode, client application code must call `UsbDev::poll()` (via an instantiated object, e.g. `usb_dev.poll()`). The frequency with which this must be done depends on the USB device class (derived class of the C++ UsbDev class) being used. In general, once USB device enumeration has been completed there should be no particular timing requirements: papoon_usb configures the STM32F103xx USB peripheral to cause the host to wait (repeatedly attempting to transfer data until confirmed) until "OUT" (host-centric data) has been retrieved by the client application by calling UsbDev::recv(). Likewise, client code can send "IN" data to the host at any time by querying `UsbDev::send()` to see if the previous send (if any) has completed.
+        NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
 
-Contrary to this, before and during enumeration `poll()` must be called at a very high rate due to the speed of the USB 2.0 "full speed" protocol. It is best to do this in a very tight loop, optimally:
+(using C with [core_cm3.h](arm/core_cm3.h)).
+
+In non-`USB_DEV_INTERRUPT_DRIVEN` (i.e. polled) mode, client application code must call `UsbDev::poll()` (via an instantiated object, e.g. `usb_dev.poll()`). The frequency with which this must be done depends on the USB device class (implemented in the C++ class derived from `UsbDev`) being used. In general, once USB device enumeration has been completed there should be no particular timing requirements as papoon_usb configures the STM32F103xx USB peripheral to cause the host to wait (repeatedly attempting to transfer data until confirmed) until the "OUT" (standard USB host-centric nomenclature) data has been retrieved by the client application calling `UsbDev::recv()`. Likewise, client code can send "IN" data to the host at any time, checking the return value of `UsbDev::send()` to see if the previous send (if any) has completed and the new data has been successfully queued for transfer.
+
+To the contrary, before and during enumeration `poll()` must be called at a very high rate due to the speed of the USB 2.0 "full speed" protocol. It is best to do this in as tight a loop as possible, optimally:
 
         while (usb_dev.device_state() != UsbDev::DeviceState::CONFIGURED)
             usb_dev.poll();
 
-although it might be possible to do some additional minimal processing within the loop. Note that given the latency involved in ARM interrupts this is probably faster than relying on them, although interrupts are sufficiently fast for (most? all?) USB host controllers their host driver software implementations.
+although it might be acceptable to do some minimal additional processing within the loop. Note that given the latency involved in ARM interrupts this is probably faster than relying on them, although interrupts are sufficiently fast for (most? all?) USB host controllers and their host driver software implementations.
 
-If the `USB_DEV_ENDPOINT_CALLBACKS` macro is defined, papoon_usb will call any functions registered via `UsbDev::register_recv_callback()` or `UsbDev::register_send_callback()` when data has been received on the registered endpoint or it is available to send data, respectively. C++ coders note that these must be global or namespace-scope functions (see [C++](#cplusplus), below), not object instance methods (no `std::bind` available). Note that enabling both polling and callbacks is not particularly useful: `UsbDev::poll()` returns a `uint16_t` with bits set indicating "ready" endpoints (which can be extracted using the `UsbDev::poll_recv_ready()` and `UsbDev::poll_recv_ready()` convenience functions), and explicitly executing the appropriate code either inline or by calling a "callback" function in the application's main loop is as efficient as allowing `UsbDev` to call the callback implicitly. The choice is a matter of the application writer's taste.
+If the `USB_DEV_ENDPOINT_CALLBACKS` macro is defined, papoon_usb will call any functions registered via `UsbDev::register_recv_callback()` and `UsbDev::register_send_callback()` when data has been received on the registered endpoint or it is available to send data, respectively. C++ coders note that these must be global or namespace-scope functions (see [C++](#cplusplus), below), not object instance methods (no `std::bind` available). Note that enabling both polling and callbacks is not particularly useful: `UsbDev::poll()` returns a `uint16_t` with bits set indicating "ready" endpoints (which can be extracted using the `UsbDev::poll_recv_ready()` and `UsbDev::poll_recv_ready()` convenience functions), and explicitly executing the appropriate code either inline or by calling a "callback" function in the application's main loop is as efficient as allowing `UsbDev` to call the callback implicitly. The choice is a matter of the application developer's taste.
+
+Regardless the polled-vs-interrupt-driven and callbacks-vs-direct configuration chosen, all the above methods use papoon_usb's `UsbDev::send()` and `UsbDev::recv()` methods to marshall data between application code `uint8_t*` buffers and the internal STM32F103xx USB peripheral's "PMA" memory. Data copying is done via CPU or DMA, controlled by defining (or not) the `USB_DEV_DMA_PMA` compilation macro. Testing has shown little or no performance benefit from using DMA in this use-case (as opposed to memory-to-memory copies to normal memory) but the code and option to use it has been retained regardless(see [Further development](#further_development), below).
+
+Overall performance can, however, be increased by applications directly accessing PMA memory, eliminating the buffer copying overhead. This could consist of the application directly generating data to send to the host in PMA memory, directly reading/parsing received data, or using the STM32F103xx DMA engine to transfer data between another peripheral and the USB PMA memory. A classic example of the latter would be implementing a bidirectional USB-to-serial hardware bridge using the papoon_usb and the STM32F103xx USART peripheral.
+
+A number of `UsbDev` class methods are provided for these use-cases, including non-buffer-copying `send()` and `recv()` methods, `recv_lnth()` and `recv_done()` (for status checking), `read()` and `writ()` (single `uint16_t` data copies), and `send_buf()` and `recv_buf()` (for obtaining raw memory addresses). Note that extreme care must be used when using these --- memory overwrites will almost certainly cause fatal application crashes, and careful attention must be paid to `uint8_t`, `uint16_t`, and `uint32_t` memory alignment and endian-ness. See the documentation in [usb_dev.hxx](usb/usb_dev.hxx) for further descriptions and information.
+
+Finally, if only the above direct-access mehods are being used and the normal buffer-copying `send()` and `recv()` methods are not needed, the `USB_DEV_NO_BUFFER_RECV_SEND` macro can be defined to prevent their compilation and save space in the compiled application binary.
+
 
 
 <a name="usb_class_implementations"></a>
@@ -300,9 +312,10 @@ The examples include:
 
 
 ##### CDC-ACM echo
-STM32F103 USB device echoes back text sent to it via the USB CDC-ACM class protocol (see [USB insanity](#usb_standard), below). Text is prepended with a four-character hexadecimal sequence number, and a two-character hex index showing when a single DOWN (USB host-centric nomenclature) transfer is split into two UP echoes due to the additional 8 bytes of sequence/index/spaces. See [above](#linux_usb_cdc_acm_driver) regarding host USB CDC-ACM drivers.
+STM32F103 USB device echoes back text sent to it via the USB CDC-ACM class protocol (see [USB insanity](#usb_standard), below). Text is prepended with a four-character hexadecimal sequence number, and a two-character hex index showing when a single DOWN (USB host-centric nomenclature) transfer has been split into two UP echoes due to the additional 8 bytes of sequence/index/spaces. See [above](#linux_usb_cdc_acm_driver) regarding host USB CDC-ACM drivers.
 
-Implemented in [usb_cdc_acm_echo.cxx](examples/blue_pill/usb_cdc_acm_echo.cxx), [usb_echo.cxx](examples/blue_pill/usb_echo.cxx) client application source, and [usb_dev_cdc_acm.cxx](usb/usb_dev_cdc_acm.cxx) C++ subclass, files.
+Implemented in the [usb_cdc_acm_echo.cxx](examples/blue_pill/usb_cdc_acm_echo.cxx) and  [usb_echo.cxx](examples/blue_pill/usb_echo.cxx)
+client application example source files.
 
 ##### Simple echo
 STM32F103 USB device echoes back text sent to it via the a simple custom USB class (see [USB insanity](#usb_standard), below), implemented in [usb_dev_simple.cxx](usb/usb_dev_simple.cxx) Text is prepended with a four-character hexadecimal sequence number, and a two-character hex index showing when a single DOWN (USB host-centric nomenclature) transfer is split into two UP echoes due to the additional 8 bytes of sequence/index/spaces.
@@ -310,10 +323,10 @@ STM32F103 USB device echoes back text sent to it via the a simple custom USB cla
 Implemented in [usb_simple_echo.cxx](examples/blue_pill/usb_simple_echo.cxx), [usb_echo.cxx](examples/blue_pill/usb_echo.cxx) client application source files. See [linux/stdin.cxx](examples/linux/stdin.cxx) for the simple USB class' `libusb`-based host side user-space "driver".
 
 ##### Simple random test
-This is a "stress test" demonstration in which both the STM32F103 USB device and the host simultaneously send random data of random length (up to the max 64 byte USB full-speed endpoint data packet limit) to each other using the "simple" custom USB class protocol. Implemented in the [usb_simple_randomtest.cxx](examples/blue_pill/usb_simple_randomtest.cxx), [usb_randomtest.cxx](examples/blue_pill/usb_randomtest.cxx) client application source files, the [usb_dev_simple.cxx](usb/usb_dev_simple.cxx) `UsbDev` C++ derived class, and the [linux/simple_randomtest.cxx](examples/linux/simple_randomtest.cxx) `libusb`-based host-side source file.
+This is a "stress test" demonstration in which both the STM32F103 USB device and the host simultaneously send random data of random length (up to the max 64 byte USB full-speed endpoint data packet limit) to each other using the "simple" custom USB class protocol ([usb_dev_simple.cxx](usb/usb_dev_simple.cxx)). Implemented in the [usb_simple_randomtest.cxx](examples/blue_pill/usb_simple_randomtest.cxx), [usb_randomtest.cxx](examples/blue_pill/usb_randomtest.cxx) client application source files and the [linux/simple_randomtest.cxx](examples/linux/simple_randomtest.cxx) `libusb`-based host-side source file.
 
 ##### CDC-ACM random test
-Similar to the "simple" randomtest above, but using the standard USB CDC-ACM class protocol. Note that CDC-ACM uses USB `BULK` endpoints compared to "simple"'s `INTERRUPT`, so performance --- both throughput and latency --- differ greatly between the two. Implemented in the [usb_cdc_acm_randomtest.cxx](examples/blue_pill/usb_cdc_acm_randomtest.cxx), [usb_randomtest.cxx](examples/blue_pill/usb_randomtest.cxx) client application source files, the [usb_dev_cdc_acm.cxx](usb/usb_dev_cdc_acm.cxx) `UsbDev` C++ derived class, and the [linux/tty_randomtest.cxx](examples/linux/tty_randomtest.cxx) `libusb`-based host-side source file.
+Similar to the "simple" randomtest above, but using the standard USB CDC-ACM class ([usb_dev_cdc_acm.cxx](usb/usb_dev_cdc_acm.cxx)) protocol. Note that CDC-ACM uses USB `BULK` endpoints compared to "simple"'s `INTERRUPT`, so performance --- both throughput and latency --- differ greatly between the two. Implemented in the [usb_cdc_acm_randomtest.cxx](examples/blue_pill/usb_cdc_acm_randomtest.cxx), [usb_randomtest.cxx](examples/blue_pill/usb_randomtest.cxx) client application source files and the [linux/tty_randomtest.cxx](examples/linux/tty_randomtest.cxx) `libusb`-based host-side source file.
 
 ##### HID mouse
 This USB HID demo jitters the host computer's mouse pointer in very small circles (intentionally small, as otherwise regaining control of the host desktop environment would be difficult). Implemented in the [mouse.cxx](examples/blue_pill/mouse.cxx) client application source file and the [usb_dev_hid_mouse.cxx](usb/usb_dev_hid_mouse.cxx) and [usb_dev_hid.cxx](usb/usb_dev_hid.cxx) `UsbDev` C++ derived class sources. See [USB insanity](#usb_standard), below, regarding USB HID class standard.
@@ -332,7 +345,14 @@ Implementation of papoon_usb
 
 Everyone will hate the papoon_usb code.
 
-C coders will hate in because ... C++. Although note that due to papoon_usb's simplistic use of C++, C wrappers can easily be created for access from pure C code.
+C coders will hate it because ... C++. Although note that due to papoon_usb's simplistic use of C++, C wrappers can easily be created for access from pure C code. See
+[usb_dev.h](usb/usb_dev.h), 
+[usb_dev_c.inl](usb/usb_dev_c.inl), 
+[usb_dev_cdc_acm_c.cxx](usb/usb_dev_cdc_acm_c.cxx), 
+[usb_echo_c.c](examples/blue_pill/usb_echo_c.c), 
+[usb_cdc_acm_echo_c.c](examples/blue_pill/usb_cdc_acm_echo_c.c), 
+and the `usb_cdc_acm_echo_c.elf` target in
+[examples/blue_pill/Makefile](examples/blue_pill/Makefile).
 
 C++ coders will hate papoon_usb because ...
 
@@ -344,11 +364,11 @@ C++ coders will hate papoon_usb because ...
 
 ... and many, many more.
 
-Well, there are reasons for why the code was written the way it was, not that those reasons are likely to sway believers in rigorous C++ design philosophies. 
+Well, there are reasons for why the code was written the way it was, not that those reasons are likely to sway believers in rigid C++ design philosophies. 
 
-Not "object-oriented", only "object-based? Fine. This is use of C++ as what some call "a better C".
+Not "object-oriented", only "object-based? Analysis accepted. This is purposeful use of C++ as what some call "a better C".
 
-The init() methods? Again intentional. MCU pre-`main()` startup code is complex enough without requiring that it call runtime constructors for static objects, thus this code's use of only `constexpr` constructors. More important is the fact that much of the object initialization **can't** take place before the MCU itself is configured (clock sources and speeds, peripheral enabling and resetting, etc), and likewise the MCU initialization code, which is very application specific, does not belong in the generic pre-`main()` `init()` (aka `start()`) function. Also see [below](#unique_id) for the reason behind the `UsbDev::serial_number_init()` method (this is where the practicalities of the real world diverge from what's taught in CompSci 201).
+The init() methods? Again intentional. MCU pre-`main()` startup code is complex enough without requiring that it call runtime constructors for static objects, thus this code's use of only `constexpr` constructors. More important is the fact that much of the object initialization **can't** take place before the MCU itself is configured (clock sources and speeds, peripheral enabling and resetting, etc), and likewise this application-specific MCU initialization  does not belong in the generic pre-`main()` `init()` (aka `start()`) function. Also see [below](#unique_id) for the reason behind the `UsbDev::serial_number_init()` method (this is where the practicalities of the real world diverge from what's taught in CompSci 201).
 
 Global objects vs the Singleton Pattern? The underlying hardware is inherently and unavoidably made up of singletons in the form of hardware subsystems. There is no need to dynamically construct singleton pointers, and in fact the entire software architecture contains no dynamic memory allocation at all (unthinkable!!). I contend this is a rational design in the face of the limited capabilities (20 KB RAM, 64 to 128 KB non-volatile flash memory, 72 MHz max clock speed) of the STM32F103xx chips.
 
@@ -596,11 +616,10 @@ Further development
 -----------
 
 #### papoon_usb
-* Implement DMA for `UsbDev::::read_pma_data()` and `UsbDev::writ_pma_data()`. See if any significant performance improvement given max 64 bytes max as per USB full-speed standard and need to do synchronously (wait for completion).
 * Implement USB standard GET_CONFIGURATION and GET_INTERFACE.
-* Initialize `UsbDev::_setup_packet` pointer to PMA memory only once, in `UsbDev::init()`, not repeatedly in `UsbDev::setup()` (should never change; hardware reset re-initializes peripheral registers to default values but not PMA memory).
 * Try removing cached `ctr_tx` and `ctr_stp` in `UsbDev::ctr()` and rely on bits in `usb->EPRN[0]` register maintaining correct state.
 * <a name="write-toggle-only-bits"></a> Try writing endpoint registers' "toggle-only" bits without first reading them for their current vs. desired state, instead trusting that their value is deterministically known at given points in the enumeration process.
+* Further investigate performance of CPU vs DMA copies to/from PMA memory.
 * Test USB class with multiple configurations in device descriptor.
 * Test USB class with multiple interfaces in configuration descriptor (aka "composite" device).
 * Implement endpoint double-buffering.
@@ -608,9 +627,8 @@ Further development
 
 <a name="regbits_future_work"></a>
 #### regbits
-* Implement type-safe NVIC bit manipulation in core_cm3.hxx and stm32f103xb.hxx
 * Implement direct, write-only, methods for manipulating "toggle only" bits in EPRN[N] registers (rely on register being in known state at fixed points during enumeration process).
-
+* Investigate why [regbits.hxx](regbits/regbits.hxx) `constexpr` semantics require C++17 compilation (`-std=c++17` option) when using the `gcc-arm-none-eabi-9-2019-q4-major` compiler at [arm Developer](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads) vs C++11 (`-std=c++11`) being sufficient for the `gcc-arm-none-eabi-8-2018-q4-major` and earlier releases.
 
 #### libusb and Linux
 * Find way to fully reset (cause re-enumeration as per power-up/-cycle)  attached STM32F103xx USB peripheral from software as alternative to shorting USB D+ line to ground as per USB hardware standard.

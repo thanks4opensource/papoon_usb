@@ -18,42 +18,9 @@
 // <https://www.gnu.org/licenses/gpl.html>
 
 
-#include <stdint.h>
+#ifndef USB_MCY_INIT_H
+#define USB_MCY_INIT_H
 
-#include <core_cm3.hxx>
+void usb_mcu_init();
 
-#include <stm32f103xb.hxx>
-
-#include <usb_dev_simple.hxx>
-
-#include <usb_randomtest.hxx>
-
-
-using namespace stm32f103xb;
-using namespace stm32f10_12357_xx;
-
-
-UsbDevSimple        usb_dev;
-
-uint8_t             recv_buf[UsbDevSimple::OUT_ENDPOINT_MAX_PACKET],
-                    send_buf[UsbDevSimple:: IN_ENDPOINT_MAX_PACKET];
-
-
-
-int main()
-{
-    usb_randomtest::init();
-
-    if (!usb_dev.init())
-    {
-        gpioc->bsrr = Gpio::Bsrr::BR13;  // turn on user LED by setting low
-        while (true)         // hang
-             asm("nop");
-    }
-
-    usb_randomtest::wait_configured();
-
-    usb_randomtest::run(UsbDevSimple::OUT_ENDPOINT,
-                        UsbDevSimple::IN_ENDPOINT );
-
-}
+#endif   // ifndef USB_MCY_INIT_H

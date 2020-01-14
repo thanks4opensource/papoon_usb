@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -21,6 +21,10 @@
 #ifndef SYS_TICK_TIMER_HXX
 #define SYS_TICK_TIMER_HXX
 
+#define ARM_SYS_TICK_TIMER_MAJOR_VERSION    1
+#define ARM_SYS_TICK_TIMER_MINOR_VERSION    1
+#define ARM_SYS_TICK_TIMER_MICRO_VERSION    1
+
 #include <stdint.h>
 
 #ifndef CORE_CMX_HXX_INCLUDED
@@ -31,8 +35,19 @@ namespace arm {
 
 class SysTickTimer {
   public:
-    void    on () { arm::sys_tick->ctrl |= arm::SysTick::Ctrl::ENABLE; }
-    void    off() { arm::sys_tick->ctrl -= arm::SysTick::Ctrl::ENABLE; }
+    SysTickTimer() {}
+    SysTickTimer(
+    unsigned    begin)
+    {
+        switch (begin) {
+            case 32: begin32(); break;
+            case 64: begin64(); break;
+            default:            break;
+        }
+    }
+
+    static void on () { arm::sys_tick->ctrl |= arm::SysTick::Ctrl::ENABLE; }
+    static void off() { arm::sys_tick->ctrl -= arm::SysTick::Ctrl::ENABLE; }
 
     void begin32()       { _start_tick = arm::sys_tick->val; _elapsed32 = 0; }
     void begin64()       { _start_tick = arm::sys_tick->val; _elapsed64 = 0; }

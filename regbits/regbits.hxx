@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -66,6 +66,8 @@ template<typename WORD, typename CLSS> class Pos {
     const Pos<WORD, CLSS>   &other)
     :   _pos(other._pos)
     {}
+#else
+    Pos(const Pos<WORD, CLSS> &other) = default;
 #endif
 
 
@@ -189,6 +191,8 @@ template<typename WORD, typename CLSS> class Bits {
     const Bits<WORD, CLSS>  &other)
     :   _bits(other._bits)
     {}
+#else
+    Bits(const Bits<WORD, CLSS> &other) = default;
 #endif
 
     // for passing constexpr instance by value without requiring storage
@@ -393,6 +397,8 @@ template<typename WORD, typename CLSS> class Mskd {
     :   _mask(other._mask),
         _bits(other._bits)
     {}
+#else
+    Mskd(const Mskd<WORD, CLSS> &other) = default;
 #endif
 
     // for passing constexpr instance by value without requiring storage
@@ -615,6 +621,8 @@ template<typename WORD, typename CLSS> class Shft {
     :   _mask(other._mask),
         _pos (other._pos )
     {}
+#else
+    Shft(const Shft<WORD, CLSS> &other) = default;
 #endif
 
     // for passing constexpr instance by value without requiring storage
@@ -699,6 +707,8 @@ template<typename WORD,  typename CLSS> class Reg {
     const Reg<WORD, CLSS>   &other)
     :   _word(other._word)
     {}
+#else
+    Reg(const Reg<WORD, CLSS> &other) = default;
 #endif
 
     // for passing constexpr instance by value without requiring storage

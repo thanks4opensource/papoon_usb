@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -28,15 +28,15 @@
 
 #if REGBITS_MAJOR_VERSION == 1
 #if REGBITS_MINOR_VERSION  < 0
-#warning REGBITS_MINOR_VERSION < 0 with required REGBITS_MAJOR_VERSION == 1
+#warning REGBITS_MINOR_VERSION >= 0 with required REGBITS_MAJOR_VERSION == 1
 #endif
 #else
 #error REGBITS_MAJOR_VERSION != 1
 #endif
 
 #define STM32F103XB_MAJOR_VERSION   1
-#define STM32F103XB_MINOR_VERSION   0
-#define STM32F103XB_MICRO_VERSION   1
+#define STM32F103XB_MINOR_VERSION   2
+#define STM32F103XB_MICRO_VERSION   0
 
 
 
@@ -1640,6 +1640,207 @@ static_assert(sizeof(Exti) == 24, "sizeof(Exti) != 24");
 
 
 
+struct Dma {
+    struct Isr {
+        using              pos_t = Pos<uint32_t, Isr>;
+        static constexpr   pos_t
+                GIF1_POS = pos_t( 0),
+               TCIF1_POS = pos_t( 1),
+               HTIF1_POS = pos_t( 2),
+               TEIF1_POS = pos_t( 3),
+                GIF2_POS = pos_t( 4),
+               TCIF2_POS = pos_t( 5),
+               HTIF2_POS = pos_t( 6),
+               TEIF2_POS = pos_t( 7),
+                GIF3_POS = pos_t( 8),
+               TCIF3_POS = pos_t( 9),
+               HTIF3_POS = pos_t(10),
+               TEIF3_POS = pos_t(11),
+                GIF4_POS = pos_t(12),
+               TCIF4_POS = pos_t(13),
+               HTIF4_POS = pos_t(14),
+               TEIF4_POS = pos_t(15),
+                GIF5_POS = pos_t(16),
+               TCIF5_POS = pos_t(17),
+               HTIF5_POS = pos_t(18),
+               TEIF5_POS = pos_t(19),
+                GIF6_POS = pos_t(20),
+               TCIF6_POS = pos_t(21),
+               HTIF6_POS = pos_t(22),
+               TEIF6_POS = pos_t(23),
+                GIF7_POS = pos_t(24),
+               TCIF7_POS = pos_t(25),
+               HTIF7_POS = pos_t(26),
+               TEIF7_POS = pos_t(27);
+
+        using              bits_t = Bits<uint32_t, Isr>;
+        static constexpr   bits_t
+        GIF1             = bits_t(1,         GIF1_POS),
+        TCIF1            = bits_t(1,        TCIF1_POS),
+        HTIF1            = bits_t(1,        HTIF1_POS),
+        TEIF1            = bits_t(1,        TEIF1_POS),
+        GIF2             = bits_t(1,         GIF2_POS),
+        TCIF2            = bits_t(1,        TCIF2_POS),
+        HTIF2            = bits_t(1,        HTIF2_POS),
+        TEIF2            = bits_t(1,        TEIF2_POS),
+        GIF3             = bits_t(1,         GIF3_POS),
+        TCIF3            = bits_t(1,        TCIF3_POS),
+        HTIF3            = bits_t(1,        HTIF3_POS),
+        TEIF3            = bits_t(1,        TEIF3_POS),
+        GIF4             = bits_t(1,         GIF4_POS),
+        TCIF4            = bits_t(1,        TCIF4_POS),
+        HTIF4            = bits_t(1,        HTIF4_POS),
+        TEIF4            = bits_t(1,        TEIF4_POS),
+        GIF5             = bits_t(1,         GIF5_POS),
+        TCIF5            = bits_t(1,        TCIF5_POS),
+        HTIF5            = bits_t(1,        HTIF5_POS),
+        TEIF5            = bits_t(1,        TEIF5_POS),
+        GIF6             = bits_t(1,         GIF6_POS),
+        TCIF6            = bits_t(1,        TCIF6_POS),
+        HTIF6            = bits_t(1,        HTIF6_POS),
+        TEIF6            = bits_t(1,        TEIF6_POS),
+        GIF7             = bits_t(1,         GIF7_POS),
+        TCIF7            = bits_t(1,        TCIF7_POS),
+        HTIF7            = bits_t(1,        HTIF7_POS),
+        TEIF7            = bits_t(1,        TEIF7_POS);
+    };  // struct Isr
+    using isr_t = Reg<uint32_t, Isr>;
+          isr_t   isr;
+
+
+    struct Ifcr {
+        using              pos_t = Pos<uint32_t, Ifcr>;
+        static constexpr   pos_t
+               CGIF1_POS = pos_t( 0),
+              CTCIF1_POS = pos_t( 1),
+              CHTIF1_POS = pos_t( 2),
+              CTEIF1_POS = pos_t( 3),
+               CGIF2_POS = pos_t( 4),
+              CTCIF2_POS = pos_t( 5),
+              CHTIF2_POS = pos_t( 6),
+              CTEIF2_POS = pos_t( 7),
+               CGIF3_POS = pos_t( 8),
+              CTCIF3_POS = pos_t( 9),
+              CHTIF3_POS = pos_t(10),
+              CTEIF3_POS = pos_t(11),
+               CGIF4_POS = pos_t(12),
+              CTCIF4_POS = pos_t(13),
+              CHTIF4_POS = pos_t(14),
+              CTEIF4_POS = pos_t(15),
+               CGIF5_POS = pos_t(16),
+              CTCIF5_POS = pos_t(17),
+              CHTIF5_POS = pos_t(18),
+              CTEIF5_POS = pos_t(19),
+               CGIF6_POS = pos_t(20),
+              CTCIF6_POS = pos_t(21),
+              CHTIF6_POS = pos_t(22),
+              CTEIF6_POS = pos_t(23),
+               CGIF7_POS = pos_t(24),
+              CTCIF7_POS = pos_t(25),
+              CHTIF7_POS = pos_t(26),
+              CTEIF7_POS = pos_t(27);
+
+        using              bits_t = Bits<uint32_t, Ifcr>;
+        static constexpr   bits_t
+        CGIF1            = bits_t(1,        CGIF1_POS),
+        CTCIF1           = bits_t(1,       CTCIF1_POS),
+        CHTIF1           = bits_t(1,       CHTIF1_POS),
+        CTEIF1           = bits_t(1,       CTEIF1_POS),
+        CGIF2            = bits_t(1,        CGIF2_POS),
+        CTCIF2           = bits_t(1,       CTCIF2_POS),
+        CHTIF2           = bits_t(1,       CHTIF2_POS),
+        CTEIF2           = bits_t(1,       CTEIF2_POS),
+        CGIF3            = bits_t(1,        CGIF3_POS),
+        CTCIF3           = bits_t(1,       CTCIF3_POS),
+        CHTIF3           = bits_t(1,       CHTIF3_POS),
+        CTEIF3           = bits_t(1,       CTEIF3_POS),
+        CGIF4            = bits_t(1,        CGIF4_POS),
+        CTCIF4           = bits_t(1,       CTCIF4_POS),
+        CHTIF4           = bits_t(1,       CHTIF4_POS),
+        CTEIF4           = bits_t(1,       CTEIF4_POS),
+        CGIF5            = bits_t(1,        CGIF5_POS),
+        CTCIF5           = bits_t(1,       CTCIF5_POS),
+        CHTIF5           = bits_t(1,       CHTIF5_POS),
+        CTEIF5           = bits_t(1,       CTEIF5_POS),
+        CGIF6            = bits_t(1,        CGIF6_POS),
+        CTCIF6           = bits_t(1,       CTCIF6_POS),
+        CHTIF6           = bits_t(1,       CHTIF6_POS),
+        CTEIF6           = bits_t(1,       CTEIF6_POS),
+        CGIF7            = bits_t(1,        CGIF7_POS),
+        CTCIF7           = bits_t(1,       CTCIF7_POS),
+        CHTIF7           = bits_t(1,       CHTIF7_POS),
+        CTEIF7           = bits_t(1,       CTEIF7_POS);
+    };  // struct Ifcr
+    using ifcr_t = Reg<uint32_t, Ifcr>;
+          ifcr_t   ifcr;
+
+};  // struct Dma
+static_assert(sizeof(Dma) == 8, "sizeof(Dma) != 8");
+
+
+
+struct DmaChannel {
+    struct Ccr {
+        using              pos_t = Pos<uint32_t, Ccr>;
+        static constexpr   pos_t
+                  EN_POS = pos_t( 0),
+                TCIE_POS = pos_t( 1),
+                HTIE_POS = pos_t( 2),
+                TEIE_POS = pos_t( 3),
+                 DIR_POS = pos_t( 4),
+                CIRC_POS = pos_t( 5),
+                PINC_POS = pos_t( 6),
+                MINC_POS = pos_t( 7),
+               PSIZE_POS = pos_t( 8),
+               MSIZE_POS = pos_t(10),
+                  PL_POS = pos_t(12),
+             MEM2MEM_POS = pos_t(14);
+
+        using              bits_t = Bits<uint32_t, Ccr>;
+        static constexpr   bits_t
+        EN               = bits_t(1,           EN_POS),
+        TCIE             = bits_t(1,         TCIE_POS),
+        HTIE             = bits_t(1,         HTIE_POS),
+        TEIE             = bits_t(1,         TEIE_POS),
+        DIR              = bits_t(1,          DIR_POS),
+        DIR_PERIPH2MEM   = bits_t(0,          DIR_POS),
+        DIR_MEM2PERIPH   = bits_t(1,          DIR_POS),
+        CIRC             = bits_t(1,         CIRC_POS),
+        PINC             = bits_t(1,         PINC_POS),
+        MINC             = bits_t(1,         MINC_POS),
+        MEM2MEM          = bits_t(1,      MEM2MEM_POS);
+
+        static const uint32_t
+              PSIZE_MASK =       0x3U,
+              MSIZE_MASK =       0x3U,
+                 PL_MASK =       0x3U;
+
+        using              mskd_t = Mskd<uint32_t, Ccr>;
+        static constexpr   mskd_t
+        PL_LOW           = mskd_t(      PL_MASK,     0b00,        PL_POS),
+        PL_MEDIUM        = mskd_t(      PL_MASK,     0b01,        PL_POS),
+        PL_HIGH          = mskd_t(      PL_MASK,     0b10,        PL_POS),
+        PL_VERY_HIGH     = mskd_t(      PL_MASK,     0b11,        PL_POS),
+        MSIZE_8_BITS     = mskd_t(      MSIZE_MASK,  0b00,        MSIZE_POS),
+        MSIZE_16_BITS    = mskd_t(      MSIZE_MASK,  0b01,        MSIZE_POS),
+        MSIZE_32_BITS    = mskd_t(      MSIZE_MASK,  0b10,        MSIZE_POS),
+        PSIZE_8_BITS     = mskd_t(      PSIZE_MASK,  0b00,        PSIZE_POS),
+        PSIZE_16_BITS    = mskd_t(      PSIZE_MASK,  0b01,        PSIZE_POS),
+        PSIZE_32_BITS    = mskd_t(      PSIZE_MASK,  0b10,        PSIZE_POS);
+    };  // struct Ccr
+    using ccr_t = Reg<uint32_t, Ccr>;
+          ccr_t   ccr;
+
+
+    uint32_t    ndt,
+                pa,
+                ma;
+
+};  // struct DmaChannel
+static_assert(sizeof(DmaChannel) == 16, "sizeof(DmaChannel) != 16");
+
+
+
 // timers
 //
 
@@ -2173,12 +2374,14 @@ struct UsbBufDesc {
         const uint16_t  num_bytes)
         volatile
         {
-            if (num_bytes < 64)
+            if (num_bytes <= 62)
                 *this =   CountRx::BLSIZE_0_2_BYTES
-                        | CountRx::num_block_0(num_bytes);
-            else if (num_bytes < 512)
+                        | CountRx::num_block_0((num_bytes + 1) >> 1);
+            else if (num_bytes <= 512)
                 *this =   CountRx::BLSIZE_0_32_BYTES
-                        | CountRx::num_block_0((num_bytes - 32) >> 5);
+                        | CountRx::num_block_0(    (   ((num_bytes + 31) & ~31)
+                                                     - 32)
+                                                >> 5);
             // else fail silently
         }
 
@@ -2186,13 +2389,33 @@ struct UsbBufDesc {
         const uint16_t  num_bytes)
         volatile
         {
-            if (num_bytes < 64)
+            if (num_bytes <= 62)
                 *this =   CountRx::BLSIZE_1_2_BYTES
-                        | CountRx::num_block_1(num_bytes);
-            else if (num_bytes < 512)
+                        | CountRx::num_block_1((num_bytes + 1) >> 1);
+            else if (num_bytes <= 512)
                 *this =   CountRx::BLSIZE_1_32_BYTES
-                        | CountRx::num_block_1((num_bytes - 32) >> 5);
+                        | CountRx::num_block_1(    (   ((num_bytes + 31) & ~31)
+                                                     - 32)
+                                                >> 5);
             // else fail silently
+        }
+
+        uint16_t num_bytes_0()
+        volatile
+        {
+            uint16_t    num_blocks = this->shifted(CountRx::NUM_BLOCK_0_SHFT);
+
+            if (this->any(CountRx::BLSIZE_0)) return (num_blocks + 1) << 5;
+            else                              return  num_blocks      << 1;
+        }
+
+        uint16_t num_bytes_1()
+        volatile
+        {
+            uint16_t    num_blocks = this->shifted(CountRx::NUM_BLOCK_1_SHFT);
+
+            if (this->any(CountRx::BLSIZE_1)) return (num_blocks + 1) << 5;
+            else                              return  num_blocks      << 1;
         }
     };  // struct count_rx_t
     count_rx_t  count_rx;
@@ -2523,6 +2746,126 @@ struct DbgMcu {
 static_assert(sizeof(DbgMcu) == 4, "sizeof(DbgMcu) != 4");
 
 
+
+static const uint32_t   PERIPH_BASE         = 0x40000000U;
+
+static const uint32_t   APB1PERIPH_BASE     = PERIPH_BASE              ,
+                        APB2PERIPH_BASE     = PERIPH_BASE + 0x00010000U,
+                        AHBPERIPH_BASE      = PERIPH_BASE + 0x00020000U;
+
+// APB1 peripherals
+static const uint32_t   TIM2_BASE           = APB1PERIPH_BASE + 0x00000000U,
+                        TIM3_BASE           = APB1PERIPH_BASE + 0x00000400U,
+                        TIM4_BASE           = APB1PERIPH_BASE + 0x00000800U,
+                        RTC_BASE            = APB1PERIPH_BASE + 0x00002800U,
+                        WWDG_BASE           = APB1PERIPH_BASE + 0x00002C00U,
+                        IWDG_BASE           = APB1PERIPH_BASE + 0x00003000U,
+                        SPI2_BASE           = APB1PERIPH_BASE + 0x00003800U,
+                        USART2_BASE         = APB1PERIPH_BASE + 0x00004400U,
+                        USART3_BASE         = APB1PERIPH_BASE + 0x00004800U,
+                        I2C1_BASE           = APB1PERIPH_BASE + 0x00005400U,
+                        I2C2_BASE           = APB1PERIPH_BASE + 0x00005800U,
+                        USB_BASE            = APB1PERIPH_BASE + 0x00005C00U,
+                        USB_PMAADDR         = APB1PERIPH_BASE + 0x00006000U,
+                        USB_PMASIZE         = 512                          ,
+                        CAN1_BASE           = APB1PERIPH_BASE + 0x00006400U,
+                        BKP_BASE            = APB1PERIPH_BASE + 0x00006C00U,
+                        PWR_BASE            = APB1PERIPH_BASE + 0x00007000U;
+
+// APB2 peripherals
+static const uint32_t   AFIO_BASE           = APB2PERIPH_BASE + 0x00000000U,
+                        EXTI_BASE           = APB2PERIPH_BASE + 0x00000400U,
+                        GPIOA_BASE          = APB2PERIPH_BASE + 0x00000800U,
+                        GPIOB_BASE          = APB2PERIPH_BASE + 0x00000C00U,
+                        GPIOC_BASE          = APB2PERIPH_BASE + 0x00001000U,
+                        GPIOD_BASE          = APB2PERIPH_BASE + 0x00001400U,
+                        GPIOE_BASE          = APB2PERIPH_BASE + 0x00001800U,
+                        ADC1_BASE           = APB2PERIPH_BASE + 0x00002400U,
+                        ADC2_BASE           = APB2PERIPH_BASE + 0x00002800U,
+                        TIM1_BASE           = APB2PERIPH_BASE + 0x00002C00U,
+                        SPI1_BASE           = APB2PERIPH_BASE + 0x00003000U,
+                        USART1_BASE         = APB2PERIPH_BASE + 0x00003800U;
+
+// AHB peripherals
+static const uint32_t   DMA1_BASE           = AHBPERIPH_BASE + 0x00000000U,
+                        DMA1_CHANNEL1_BASE  = AHBPERIPH_BASE + 0x00000008U,
+                        DMA1_CHANNEL2_BASE  = AHBPERIPH_BASE + 0x0000001CU,
+                        DMA1_CHANNEL3_BASE  = AHBPERIPH_BASE + 0x00000030U,
+                        DMA1_CHANNEL4_BASE  = AHBPERIPH_BASE + 0x00000044U,
+                        DMA1_CHANNEL5_BASE  = AHBPERIPH_BASE + 0x00000058U,
+                        DMA1_CHANNEL6_BASE  = AHBPERIPH_BASE + 0x0000006CU,
+                        DMA1_CHANNEL7_BASE  = AHBPERIPH_BASE + 0x00000080U,
+                        RCC_BASE            = AHBPERIPH_BASE + 0x00001000U,
+                        FLASH_BASE          = AHBPERIPH_BASE + 0x00002000U,
+                        CRC_BASE            = AHBPERIPH_BASE + 0x00003000U;
+
+static const uint32_t   ELEC_SIG_BASE       = 0x1FFFF7E0U;
+
+static const uint32_t   DBGMCU_BASE         = 0xE0042000U;
+
+
+#define STM32F103XB_PERIPH(TYPE, PERIPH, BASE)      \
+    static volatile TYPE* const                     \
+    PERIPH = reinterpret_cast<volatile TYPE*>(BASE)
+
+STM32F103XB_PERIPH( Rcc,                rcc,            RCC_BASE          );
+
+STM32F103XB_PERIPH( Gpio,               gpioa,          GPIOA_BASE        );
+STM32F103XB_PERIPH( Gpio,               gpiob,          GPIOB_BASE        );
+STM32F103XB_PERIPH( Gpio,               gpioc,          GPIOC_BASE        );
+STM32F103XB_PERIPH( Gpio,               gpiod,          GPIOD_BASE        );
+STM32F103XB_PERIPH( Gpio,               gpioe,          GPIOE_BASE        );
+
+STM32F103XB_PERIPH( Exti,               exti,           EXTI_BASE         );
+
+STM32F103XB_PERIPH( Dma,                dma1,           DMA1_BASE         );
+
+STM32F103XB_PERIPH( DmaChannel,         dma1_channel1,  DMA1_CHANNEL1_BASE);
+STM32F103XB_PERIPH( DmaChannel,         dma1_channel2,  DMA1_CHANNEL2_BASE);
+STM32F103XB_PERIPH( DmaChannel,         dma1_channel3,  DMA1_CHANNEL3_BASE);
+STM32F103XB_PERIPH( DmaChannel,         dma1_channel4,  DMA1_CHANNEL4_BASE);
+STM32F103XB_PERIPH( DmaChannel,         dma1_channel5,  DMA1_CHANNEL5_BASE);
+STM32F103XB_PERIPH( DmaChannel,         dma1_channel6,  DMA1_CHANNEL6_BASE);
+STM32F103XB_PERIPH( DmaChannel,         dma1_channel7,  DMA1_CHANNEL7_BASE);
+
+STM32F103XB_PERIPH( AdvTim_1,           adv_tim_1,      TIM1_BASE         );
+
+STM32F103XB_PERIPH( GenTim_2_3_4,       gen_tim_2,      TIM2_BASE         );
+STM32F103XB_PERIPH( GenTim_2_3_4,       gen_tim_3,      TIM3_BASE         );
+STM32F103XB_PERIPH( GenTim_2_3_4,       gen_tim_4,      TIM3_BASE         );
+
+STM32F103XB_PERIPH( Usb,                usb,            USB_BASE          );
+
+STM32F103XB_PERIPH( Spi,                spi1,           SPI1_BASE         );
+STM32F103XB_PERIPH( Spi,                spi2,           SPI2_BASE         );
+
+STM32F103XB_PERIPH( ElecSig,            elec_sig,       ELEC_SIG_BASE     );
+
+STM32F103XB_PERIPH( Flash,              flash,          FLASH_BASE        );
+
+STM32F103XB_PERIPH( DbgMcu,             dbg_mcu,        DBGMCU_BASE       );
+
+#undef STM32F103XB_PERIPH
+
+
+template <unsigned NUM_ENDPOINTS, unsigned BTABLE_OFFSET> class UsbPmaDescs {
+  public:
+    REGBITS_ARRAY_RANGE("UsbPmaDescs",
+                        EPRN,
+                        eprn,
+                        UsbBufDesc,
+                        reinterpret_cast<UsbBufDesc* const>(  USB_PMAADDR
+                                                            + BTABLE_OFFSET),
+                        NUM_ENDPOINTS);
+    // GCC bug prevents statically initializing protected UsbBufDesc* const
+    // member for reuse (works if dynamically constructed on stack).
+    // Above works for both, optimally efficient object code.
+};
+
+}  // namespace stm32f103xb
+
+
+namespace arm {
 enum class NvicIrqn {
     // Cortex-M3 Processor Exceptions Numbers
     NonMaskableInt   = -14, // 2 Non Maskable Interrupt
@@ -2580,116 +2923,7 @@ enum class NvicIrqn {
     RTC_Alarm        = 41,  // RTC Alarm through EXTI Line Interrupt
     USBWakeUp        = 42,  // USB Device WakeUp from suspend through EXTI Line Interrupt
 }; // enum NvicIrqn
+}  // namespace arm
 
-
-
-
-
-static const uint32_t   PERIPH_BASE         = 0x40000000U;
-
-static const uint32_t   APB1PERIPH_BASE     = PERIPH_BASE              ,
-                        APB2PERIPH_BASE     = PERIPH_BASE + 0x00010000U,
-                        AHBPERIPH_BASE      = PERIPH_BASE + 0x00020000U;
-
-// APB1 peripherals
-static const uint32_t   TIM2_BASE           = APB1PERIPH_BASE + 0x00000000U,
-                        TIM3_BASE           = APB1PERIPH_BASE + 0x00000400U,
-                        TIM4_BASE           = APB1PERIPH_BASE + 0x00000800U,
-                        RTC_BASE            = APB1PERIPH_BASE + 0x00002800U,
-                        WWDG_BASE           = APB1PERIPH_BASE + 0x00002C00U,
-                        IWDG_BASE           = APB1PERIPH_BASE + 0x00003000U,
-                        SPI2_BASE           = APB1PERIPH_BASE + 0x00003800U,
-                        USART2_BASE         = APB1PERIPH_BASE + 0x00004400U,
-                        USART3_BASE         = APB1PERIPH_BASE + 0x00004800U,
-                        I2C1_BASE           = APB1PERIPH_BASE + 0x00005400U,
-                        I2C2_BASE           = APB1PERIPH_BASE + 0x00005800U,
-                        USB_BASE            = APB1PERIPH_BASE + 0x00005C00U,
-                        USB_PMAADDR         = APB1PERIPH_BASE + 0x00006000U,
-                        USB_PMASIZE         = 512                          ,
-                        CAN1_BASE           = APB1PERIPH_BASE + 0x00006400U,
-                        BKP_BASE            = APB1PERIPH_BASE + 0x00006C00U,
-                        PWR_BASE            = APB1PERIPH_BASE + 0x00007000U;
-
-// APB2 peripherals
-static const uint32_t   AFIO_BASE           = APB2PERIPH_BASE + 0x00000000U,
-                        EXTI_BASE           = APB2PERIPH_BASE + 0x00000400U,
-                        GPIOA_BASE          = APB2PERIPH_BASE + 0x00000800U,
-                        GPIOB_BASE          = APB2PERIPH_BASE + 0x00000C00U,
-                        GPIOC_BASE          = APB2PERIPH_BASE + 0x00001000U,
-                        GPIOD_BASE          = APB2PERIPH_BASE + 0x00001400U,
-                        GPIOE_BASE          = APB2PERIPH_BASE + 0x00001800U,
-                        ADC1_BASE           = APB2PERIPH_BASE + 0x00002400U,
-                        ADC2_BASE           = APB2PERIPH_BASE + 0x00002800U,
-                        TIM1_BASE           = APB2PERIPH_BASE + 0x00002C00U,
-                        SPI1_BASE           = APB2PERIPH_BASE + 0x00003000U,
-                        USART1_BASE         = APB2PERIPH_BASE + 0x00003800U;
-
-// AHB peripherals
-static const uint32_t   DMA1_BASE           = AHBPERIPH_BASE + 0x00000000U,
-                        DMA1_Channel1_BASE  = AHBPERIPH_BASE + 0x00000008U,
-                        DMA1_Channel2_BASE  = AHBPERIPH_BASE + 0x0000001CU,
-                        DMA1_Channel3_BASE  = AHBPERIPH_BASE + 0x00000030U,
-                        DMA1_Channel4_BASE  = AHBPERIPH_BASE + 0x00000044U,
-                        DMA1_Channel5_BASE  = AHBPERIPH_BASE + 0x00000058U,
-                        DMA1_Channel6_BASE  = AHBPERIPH_BASE + 0x0000006CU,
-                        DMA1_Channel7_BASE  = AHBPERIPH_BASE + 0x00000080U,
-                        RCC_BASE            = AHBPERIPH_BASE + 0x00001000U,
-                        FLASH_BASE          = AHBPERIPH_BASE + 0x00002000U,
-                        CRC_BASE            = AHBPERIPH_BASE + 0x00003000U;
-
-static const uint32_t   ELEC_SIG_BASE       = 0x1FFFF7E0U;
-
-static const uint32_t   DBGMCU_BASE         = 0xE0042000U;
-
-
-#define STM32F103XB_PERIPH(TYPE, PERIPH, BASE)      \
-    static volatile TYPE* const                     \
-    PERIPH = reinterpret_cast<volatile TYPE*>(BASE)
-
-STM32F103XB_PERIPH( Rcc,                rcc,            RCC_BASE        );
-
-STM32F103XB_PERIPH( Gpio,               gpioa,          GPIOA_BASE      );
-STM32F103XB_PERIPH( Gpio,               gpiob,          GPIOB_BASE      );
-STM32F103XB_PERIPH( Gpio,               gpioc,          GPIOC_BASE      );
-STM32F103XB_PERIPH( Gpio,               gpiod,          GPIOD_BASE      );
-STM32F103XB_PERIPH( Gpio,               gpioe,          GPIOE_BASE      );
-
-STM32F103XB_PERIPH( Exti,               exti,           EXTI_BASE       );
-
-STM32F103XB_PERIPH( AdvTim_1,           adv_tim_1,      TIM1_BASE       );
-
-STM32F103XB_PERIPH( GenTim_2_3_4,       gen_tim_2,      TIM2_BASE       );
-STM32F103XB_PERIPH( GenTim_2_3_4,       gen_tim_3,      TIM3_BASE       );
-STM32F103XB_PERIPH( GenTim_2_3_4,       gen_tim_4,      TIM3_BASE       );
-
-STM32F103XB_PERIPH( Usb,                usb,            USB_BASE        );
-
-STM32F103XB_PERIPH( Spi,                spi1,           SPI1_BASE       );
-STM32F103XB_PERIPH( Spi,                spi2,           SPI2_BASE       );
-
-STM32F103XB_PERIPH( ElecSig,            elec_sig,       ELEC_SIG_BASE   );
-
-STM32F103XB_PERIPH( Flash,              flash,          FLASH_BASE      );
-
-STM32F103XB_PERIPH( DbgMcu,             dbg_mcu,        DBGMCU_BASE     );
-
-#undef STM32F103XB_PERIPH
-
-
-template <unsigned NUM_ENDPOINTS, unsigned BTABLE_OFFSET> class UsbPmaDescs {
-  public:
-    REGBITS_ARRAY_RANGE("UsbPmaDescs",
-                        EPRN,
-                        eprn,
-                        UsbBufDesc,
-                        reinterpret_cast<UsbBufDesc* const>(  USB_PMAADDR
-                                                            + BTABLE_OFFSET),
-                        NUM_ENDPOINTS);
-    // GCC bug prevents statically initializing protected UsbBufDesc* const
-    // member for reuse (works if dynamically constructed on stack).
-    // Above works for both, optimally efficient object code.
-};
-
-}  // namespace stm32f103xb
 
 #endif  // #ifndef STM32F103XB_HXX

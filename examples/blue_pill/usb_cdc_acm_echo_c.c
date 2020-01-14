@@ -20,40 +20,30 @@
 
 #include <stdint.h>
 
-#include <core_cm3.hxx>
+#include <usb_dev_cdc_acm.h>
 
-#include <stm32f103xb.hxx>
-
-#include <usb_dev_simple.hxx>
-
-#include <usb_randomtest.hxx>
+#include <usb_echo.h>
 
 
-using namespace stm32f103xb;
-using namespace stm32f10_12357_xx;
 
-
-UsbDevSimple        usb_dev;
-
-uint8_t             recv_buf[UsbDevSimple::OUT_ENDPOINT_MAX_PACKET],
-                    send_buf[UsbDevSimple:: IN_ENDPOINT_MAX_PACKET];
+uint8_t     recv_buf[CDC_OUT_DATA_SIZE],
+            send_buf[CDC_IN_DATA_SIZE ];
 
 
 
 int main()
 {
-    usb_randomtest::init();
+    usb_echo_init();
 
-    if (!usb_dev.init())
-    {
-        gpioc->bsrr = Gpio::Bsrr::BR13;  // turn on user LED by setting low
-        while (true)         // hang
-             asm("nop");
-    }
+    if (!usb_dev_init())
+        while (1)   // hang
+            asm("nop");
 
-    usb_randomtest::wait_configured();
+    usb_echo_wait_configured();
 
-    usb_randomtest::run(UsbDevSimple::OUT_ENDPOINT,
-                        UsbDevSimple::IN_ENDPOINT );
-
+    usb_echo_run(recv_buf        ,
+                 send_buf        ,
+                 CDC_IN_DATA_SIZE,
+                 CDC_ENDPOINT_OUT,
+                 CDC_ENDPOINT_IN );
 }

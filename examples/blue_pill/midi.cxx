@@ -1,5 +1,5 @@
 // papoon_usb: "Not Insane" USB library for STM32F103xx MCUs
-// Copyright (C) 2019 Mark R. Rubin
+// Copyright (C) 2019,2020 Mark R. Rubin
 //
 // This file is part of papoon_usb.
 //
@@ -70,10 +70,7 @@ int main()
     gpioc->bsrr = Gpio::Bsrr::BS13;  // turn off user LED by setting high
 
 #ifdef USB_DEV_INTERRUPT_DRIVEN
-      arm::nvic->Iser[static_cast<uint32_t>
-                                 (stm32f103xb::NvicIrqn::USB_LP_CAN1_RX0) >> 5]
-    = 1 << (  static_cast<uint32_t>(stm32f103xb::NvicIrqn::USB_LP_CAN1_RX0)
-            & 0x1f                                                            );
+    arm::nvic->iser.set(arm::NvicIrqn::USB_LP_CAN1_RX0);
 #endif
 
     if (!usb_dev.init())
@@ -97,7 +94,6 @@ int main()
     static const uint8_t        MIDI_NOTES[] = {60, 62, 64, 65, 67, 69, 71, 72},
                             NUM_MIDI_NOTES   = sizeof(MIDI_NOTES)              ;
 
-    volatile   // DEBUG
     uint8_t                             midi_note_ndx = 0;
     volatile UsbDevMidi::EventPacket    packet           ;
 
@@ -107,8 +103,6 @@ int main()
                         MIDI_NOTE_ON | MIDI_CHANNEL    ,
                         MIDI_NOTES[midi_note_ndx]      ,
                         MIDI_VELOCITY                   );
-
-        note_on: asm("nop");    // DEBUG -- GDB dprintf
 
         while (!usb_dev.send(usb_dev.BULK_IN_ENDPOINT           ,
                              static_cast<const uint8_t*>(packet),
@@ -129,8 +123,6 @@ int main()
                         MIDI_NOTE_OFF | MIDI_CHANNEL     ,
                         MIDI_NOTES[midi_note_ndx]        ,
                         MIDI_VELOCITY                    );
-
-        note_off: asm("nop");   // DEBUG -- GDB dprintf
 
         while (!usb_dev.send(usb_dev.BULK_IN_ENDPOINT           ,
                              static_cast<const uint8_t*>(packet),
