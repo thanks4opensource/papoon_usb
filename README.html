@@ -108,13 +108,11 @@ int main()
                     send_len;
 
         if (recv_len = usb_dev.recv(UsbDevCdcAcm::CDC_ENDPOINT_OUT, recv_buf)) {
-            // process data received from host
+            // process data received from host -- populate send_buf and set send_len
+
+            while (!usb_dev.send(UsbDevCdcAcm::CDC_ENDPOINT_IN, send_buf, send_len))
+                usb_dev.poll();
         }
-
-        // fill buffer and set send_len
-
-        while (!usb_dev.send(UsbDevCdcAcm::CDC_ENDPOINT_IN, send_buf, send_len))
-            usb_dev.poll();
     }
 }
 </code></pre>
@@ -199,7 +197,7 @@ Code <a name="code_description"></a> snippets from the example, with brief addit
         usb_dev.poll();
 </code></pre>
 
-<p>Optional &#8212; UsbDev::recv() and UsbDev::send() will return 0 and false respectively until USB enumeration of device by host has been completed, but this is explicitly waits until the status is known. Also see <a href="#interrupts_polling_callbacks">Interrupts, polling, callbacks</a>, below, regarding related timing and performance issues.</p>
+<p>Optional &#8212; <code>UsbDev::recv()</code> and <code>UsbDev::send()</code> will return 0 and false respectively until USB enumeration of device by host has been completed, but this explicitly waits until the status is known. Also see <a href="#interrupts_polling_callbacks">Interrupts, polling, callbacks</a>, below, regarding related timing and performance issues.</p>
 
 <br>
 
@@ -214,22 +212,22 @@ Code <a name="code_description"></a> snippets from the example, with brief addit
 <pre><code>        uint16_t    recv_len,
                     send_len;
 
+
         if (recv_len = usb_dev.recv(UsbDevCdcAcm::CDC_ENDPOINT_OUT, recv_buf)) {
-            // process data received from host
-        }
 </code></pre>
 
-<p>Non-blocking read.</p>
+<p>Non-blocking read. Returns number of bytes of bytes received or 0 if none</p>
 
 <br>
 
-<pre><code>        // fill buffer and set send_len
+<pre><code>            // process data received from host -- populate send_buf and set send_len
 
-        while (!usb_dev.send(UsbDevCdcAcm::CDC_ENDPOINT_IN, send_buf, send_len))
-            usb_dev.poll();
+            while (!usb_dev.send(UsbDevCdcAcm::CDC_ENDPOINT_IN, send_buf, send_len))
+                usb_dev.poll();
+        }
 </code></pre>
 
-<p>Wait for send completion. (See <a href="#interrupts_polling_callbacks">Interrupts, polling, callbacks</a>, below)</p>
+<p>Wait for send ready (i.e. previous send completed), and queue USB &#8220;IN&#8221; transaction. (See <a href="#interrupts_polling_callbacks">Interrupts, polling, callbacks</a>, below)</p>
 
 <br>
 
@@ -289,7 +287,7 @@ Code <a name="code_description"></a> snippets from the example, with brief addit
 
 <p>If the <code>USB_DEV_ENDPOINT_CALLBACKS</code> macro is defined, papoon_usb will call any functions registered via <code>UsbDev::register_recv_callback()</code> and <code>UsbDev::register_send_callback()</code> when data has been received on the registered endpoint or it is available to send data, respectively. C++ coders note that these must be global or namespace-scope functions (see <a href="#cplusplus">C++</a>, below), not object instance methods (no <code>std::bind</code> available). Note that enabling both polling and callbacks is not particularly useful: <code>UsbDev::poll()</code> returns a <code>uint16_t</code> with bits set indicating &#8220;ready&#8221; endpoints (which can be extracted using the <code>UsbDev::poll_recv_ready()</code> and <code>UsbDev::poll_recv_ready()</code> convenience functions), and explicitly executing the appropriate code either inline or by calling a &#8220;callback&#8221; function in the application&#8217;s main loop is as efficient as allowing <code>UsbDev</code> to call the callback implicitly. The choice is a matter of the application developer&#8217;s taste.</p>
 
-<p>Regardless the polled-vs-interrupt-driven and callbacks-vs-direct configuration chosen, all the above methods use papoon_usb&#8217;s <code>UsbDev::send()</code> and <code>UsbDev::recv()</code> methods to marshall data between application code <code>uint8_t*</code> buffers and the internal STM32F103xx USB peripheral&#8217;s &#8220;PMA&#8221; memory. Data copying is done via CPU or DMA, controlled by defining (or not) the <code>USB_DEV_DMA_PMA</code> compilation macro. Testing has shown little or no performance benefit from using DMA in this use-case (as opposed to memory-to-memory copies to normal memory) but the code and option to use it has been retained regardless(see <a href="#further_development">Further development</a>, below).</p>
+<p>Regardless the polled-vs-interrupt-driven and callbacks-vs-direct configuration chosen, all the above methods use papoon_usb&#8217;s <code>UsbDev::send()</code> and <code>UsbDev::recv()</code> methods to marshall data between application code <code>uint8_t*</code> buffers and the internal STM32F103xx USB peripheral&#8217;s &#8220;PMA&#8221; memory. Data copying is done via CPU or DMA, controlled by defining (or not) the <code>USB_DEV_DMA_PMA</code> compilation macro. Testing has shown little or no performance benefit from using DMA in this use-case (as opposed to memory-to-memory copies in normal memory) but the code and option to use it has been retained regardless (see <a href="#further_development">Further development</a>, below).</p>
 
 <p>Overall performance can, however, be increased by applications directly accessing PMA memory, eliminating the buffer copying overhead. This could consist of the application directly generating data to send to the host in PMA memory, directly reading/parsing received data, or using the STM32F103xx DMA engine to transfer data between another peripheral and the USB PMA memory. A classic example of the latter would be implementing a bidirectional USB-to-serial hardware bridge using the papoon_usb and the STM32F103xx USART peripheral.</p>
 

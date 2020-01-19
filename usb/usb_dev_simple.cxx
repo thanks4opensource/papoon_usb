@@ -66,7 +66,7 @@ uint8_t UsbDev::_CONFIG_DESC[] = {  // not const because set total size entry
     0xff,   // bInterfaceProtocol: vendor specific
     0x00,   // iInterface: string descriptor index: none
 
-    // IN endpiont
+    // IN endpoint
     0x07,   // bLength: Endpoint Descriptor size
     static_cast<uint8_t>(UsbDev::DescriptorType::ENDPOINT), // bDescriptorType
     UsbDevSimple::IN_ENDPOINT | UsbDev::ENDPOINT_DIR_IN,    // bEndpointAddress
@@ -75,7 +75,7 @@ uint8_t UsbDev::_CONFIG_DESC[] = {  // not const because set total size entry
     0x00,                                   //       "       : MSB of uint16_t
     UsbDevSimple::IN_ENDPOINT_INTERVAL,     // bInterval: set in .hxx file
 
-    // OUT endpiont
+    // OUT endpoint
     0x07,   // bLength: Endpoint Descriptor size
     static_cast<uint8_t>(UsbDev::DescriptorType::ENDPOINT), // bDescriptorType
     UsbDevSimple::OUT_ENDPOINT,                             // bEndpointAddress

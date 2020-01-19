@@ -20,6 +20,7 @@
 
 PROGRAMS = example.elf \
 	   usb_simple_echo.elf  \
+	   usb_echo_max_endpts.elf  \
            usb_cdc_acm_echo.elf \
            usb_cdc_acm_echo_c.elf \
 	   usb_simple_randomtest.elf \
@@ -73,6 +74,9 @@ example.elf: example.o usb_dev.o usb_dev.o usb_dev_cdc_acm.o usb_mcu_init.o
 	$(CXX) $^ -o $@
 
 usb_simple_echo.elf: usb_simple_echo.o usb_echo.o usb_dev.o usb_dev_simple.o usb_mcu_init.o
+	$(CXX) $^ -o $@
+
+usb_echo_max_endpts.elf: usb_echo_max_endpts.o usb_echo.o usb_dev.o usb_dev_max_endpts.o usb_mcu_init.o
 	$(CXX) $^ -o $@
 
 usb_cdc_acm_echo.elf: usb_cdc_acm_echo.o usb_dev.o usb_echo.o usb_dev.o usb_dev_cdc_acm.o usb_mcu_init.o

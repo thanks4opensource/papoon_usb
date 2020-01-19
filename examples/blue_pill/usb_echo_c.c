@@ -115,16 +115,20 @@ const uint8_t        send_endpt)
 #endif
         if (recv_len = usb_dev_recv(recv_endpt, recv_buf)) {
             uint8_t     recv_ndx  = 0,
-
                         sub_count = 0;
-            while (recv_ndx < recv_len) {
-                bin_to_hex_uint16(msg_count, (char*)send_buf);
-                send_buf[4] = ' ';
-                send_len    = 5  ;
 
-                bin_to_hex_uint8(sub_count++, (char*)(send_buf + 5));
-                send_buf[7] = ' ';
-                send_len    = 8  ;
+            while (recv_ndx < recv_len) {
+                // 0123456...
+                // cccc+ ....
+
+                bin_to_hex_uint16(msg_count, (char*)send_buf);
+
+                if (sub_count++ == 0) send_buf[4] = ' ';
+                else                  send_buf[4] = '+';
+
+                send_buf[5] = ' ';
+
+                send_len = 6;
 
                 while (recv_ndx < recv_len && send_len < send_max - 1)
                     send_buf[send_len++] = recv_buf[recv_ndx++];
@@ -136,18 +140,18 @@ const uint8_t        send_endpt)
 #else
                     usb_dev_poll();
 #endif
+            }
 
-                if (send_len == 64)
-                    // exactly IN endpoint size
-                    // have to send zero-length xfer to let host know is end
-                    while (!usb_dev_send(send_endpt, send_buf, 0))
+            if (send_len == 64)
+                // exactly IN endpoint size
+                // have to send zero-length xfer to let host know is end
+                while (!usb_dev_send(send_endpt, send_buf, 0))
 #ifdef USB_DEV_INTERRUPT_DRIVEN
-                        asm("wfi");
+                    asm("wfi");
 #else
-                        usb_dev_poll();
+                    usb_dev_poll();
 #endif
 
-            }
             ++msg_count;
         }
     }

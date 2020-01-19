@@ -1,0 +1,16 @@
+1.2.1	2020 Jan 16
+-------------------
+* Improved parsing of endpoints in configuration descriptor
+* Optimized allocation of USB hardware registers
+* Added UsbDevMaxEndpts class and usb_echo_max_endpts.cxx unittest
+* Improved simple/minimal usage example
+
+
+
+1.2.0	2020 Jan 13
+-------------------
+* Improved support for non-monotonic USB descriptor endpoint addresses
+* Optional DMA copies to/from ST USB memory
+* Direct client access to internal ST USB memory 
+* C wrappers
+* Improved internal documentation

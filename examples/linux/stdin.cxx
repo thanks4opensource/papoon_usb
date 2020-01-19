@@ -31,18 +31,20 @@
 
 
 namespace {
-static const uint16_t   VENDOR         = 0x0483,
-                        PRODUCT        = 0x62e3,
-                        MAX_IN_PACKET  = 64    ,
-                        MAX_OUT_PACKET = 56    ;  // allow "0x0000 ..." echo
-                                                  // plus align mod 4
+static const uint16_t   VENDOR         = 0x0483,      // usb_dev_xxx.cxx
+                        PRODUCT        = 0x62e3,      //        "
+                        MAX_IN_PACKET  = 64    ;      // usb_dev_simple.hxx
 
-static const uint8_t     IN_ENDPOINT = 0x81,
-                        OUT_ENDPOINT = 0x02;
+static const uint8_t    NUM_IN_OUT_ENDPOINTS =    7,  // usb_dev_max_endpts.hxx
+                         IN_ENDPOINT         = 0x81,  // usb_dev_simple.hxx
+                        OUT_ENDPOINT         = 0x02;  //         "
 
 static const int        OUT_TIMEOUT = 1000,  // milliseconds? not documented
-                                             // in libusb.h
-                         IN_TIMEOUT = 1000;
+                         IN_TIMEOUT = 1000;  // in libusb.h
+
+// see usb_dev_max_endpts.hxx
+static const uint8_t   ENDPOINTS[NUM_IN_OUT_ENDPOINTS] = {7, 2, 13, 9, 1, 15, 5};
+
 
 
 const char* const speed_names[] = {"illegal speed code value",
@@ -56,13 +58,6 @@ const char* const speed_names[] = {"illegal speed code value",
 
 libusb_device_handle    *device_handle         ;
 uint8_t                 echo[MAX_IN_PACKET + 1];  // terminating '\0'
-
-#if 0
-void in_callback(
-struct libusb_transfer  *transfer)
-{
-}
-#endif
 
 extern "C" void close(
 int     signum)
@@ -95,12 +90,42 @@ int main(
 int      argc  ,
 char    *argv[])
 {
-    uint16_t    vendor  = VENDOR ,
-                product = PRODUCT;
+    bool        use_many       = false ;
+    uint8_t     vp_ndx         = 1     ,
+                pended         = 7     ; // prepended "cccc+ " + appended '\n'
 
-    if (argc == 3) {
-        vendor  = strtol(argv[1], 0, 16);
-        product = strtol(argv[2], 0, 16);
+    uint16_t    max_in_packet  = MAX_IN_PACKET,
+                max_out_packet = max_in_packet,
+                vendor         = VENDOR       ,
+                product        = PRODUCT      ;
+
+    if (argc < 2 || argv[1][0] != '-') {
+        std::cerr << "Usage: "
+                  << argv[0]
+                  << " -s|-m [vid pid]\n"
+                  << "-s        use with usb_echo_simple.elf\n"
+                  << "-m        use with usb_echo_max_endpts.elf\n"
+                  << "vid pid   vendor id, product id"
+                  << std::endl;
+        return 1;
+    }
+
+    if (argv[1][1] == 'm') {
+        use_many       = true;
+        max_in_packet  = 16  ;  // see usb_dev_max_endpts.hxx
+        max_out_packet = 16  ;  //  "          "         . "
+        pended         =  9  ;  // prepended "e cccc+ " + appended '\n'
+        vp_ndx         =  2  ;
+    }
+
+    uint16_t    max_expect_packet =   max_out_packet + pended < max_in_packet
+                                    ? max_out_packet + pended
+                                    : max_in_packet                          ,
+                max_echo_data     = max_in_packet - pended                   ;
+
+    if (argc == vp_ndx + 2) {
+        vendor  = strtol(argv[vp_ndx    ], 0, 16);
+        product = strtol(argv[vp_ndx + 1], 0, 16);
     }
 
     int     error;
@@ -151,25 +176,21 @@ char    *argv[])
         return error;
     }
 
-#if 0
-    if (   (error = libusb_reset_device(device_handle))
-        != static_cast<int>(LIBUSB_SUCCESS)                          ) {
-        std::cerr << "libusb_reset_device() failure: "
-                  << libusb_strerror(static_cast<libusb_error>(error))
-                  << '('
-                  << error
-                  << ')'
-                  << std::endl;
-        return error;
-    }
-#endif
-
     signal(SIGINT, close);
+
+    uint8_t out_endpoint = OUT_ENDPOINT,
+             in_endpoint =  IN_ENDPOINT;
 
     for (std::string input ; std::getline(std::cin, input) ; ) {
         size_t  length = input.length(),
                 offset = 0             ;
         int     bytes_transferred      ;
+
+
+        if (use_many) {
+            out_endpoint = ENDPOINTS[rand() % NUM_IN_OUT_ENDPOINTS];
+             in_endpoint = out_endpoint | 0x80;  // high bit, USB API
+        }
 
          while (length) {
             uint8_t     *current =   reinterpret_cast<uint8_t*>(
@@ -179,10 +200,10 @@ char    *argv[])
 
             size_t    xfer_length
                     = std::min(length,
-                               static_cast<size_t>(MAX_OUT_PACKET));
+                               static_cast<size_t>(max_out_packet));
 
             if (   (error = libusb_interrupt_transfer(device_handle     ,
-                                                      OUT_ENDPOINT      ,
+                                                      out_endpoint      ,
                                                       current           ,
                                                       xfer_length       ,
                                                       &bytes_transferred,
@@ -190,7 +211,7 @@ char    *argv[])
                 != static_cast<int>(LIBUSB_SUCCESS)                       ) {
 
                 std::cerr << "libusb_interrupt_transfer(, "
-                          << static_cast<unsigned>(OUT_ENDPOINT)
+                          << static_cast<unsigned>(out_endpoint)
                           << "(OUT_EP), "
                           << xfer_length
                           << ", <"
@@ -206,56 +227,25 @@ char    *argv[])
                 close(error);
             }
 
-            if (   (error = libusb_interrupt_transfer(device_handle     ,
-                                                      IN_ENDPOINT       ,
-                                                      echo              ,
-                                                      MAX_IN_PACKET     ,
-                                                      &bytes_transferred,
-                                                      IN_TIMEOUT        ))
-                != static_cast<int>(LIBUSB_SUCCESS)                 ) {
+            unsigned    fulls  = xfer_length / max_echo_data,
+                        extra  = xfer_length % max_echo_data,
+                        expect =   fulls *  max_in_packet   ;
 
-                std::cerr << "libusb_interrupt_transfer(, "
-                          << static_cast<unsigned>(IN_ENDPOINT)
-                          << "(IN_EP), <"
-                          << bytes_transferred
-                          << ">, "
-                          << IN_TIMEOUT
-                          << ") failure: "
-                          << libusb_strerror(static_cast<libusb_error>(error))
-                          << '('
-                          << error
-                          << ')'
-                          << std::endl;
-                close(error);
-            }
+            if (extra) expect += extra + pended;
 
-            echo[bytes_transferred] = '\0';
-            std::cout << echo             ;
+            bool    zero_length_packet = false;
 
-            offset += xfer_length    ;
-            length -= xfer_length    ;
-
-            // need to get either 2nd part of echo and/or
-            // zero-length transfer after max UP packet
-            // also libusb generates own zero-length packet on max length
-            // UP xfer in addition to one usb_echo.cxx:run sends but only
-            // if max UP is last of multiple transferes
-            bool    expecting =    (bytes_transferred - xfer_length < 9)
-                                    // 9 == prepended "cccc mm " + appened '\n'
-                                &&  bytes_transferred                   ,
-                                    // edge case blank line in case allowed
-                    max_in    = bytes_transferred == MAX_IN_PACKET      ;
-
-            while (expecting || max_in) {
+            while (expect || zero_length_packet) {
                 if (   (error = libusb_interrupt_transfer(device_handle     ,
-                                                          IN_ENDPOINT       ,
+                                                          in_endpoint       ,
                                                           echo              ,
-                                                          MAX_IN_PACKET     ,
+                                                          max_in_packet     ,
                                                           &bytes_transferred,
                                                           IN_TIMEOUT        ))
-                    != static_cast<int>(LIBUSB_SUCCESS)                       ){
+                    != static_cast<int>(LIBUSB_SUCCESS)                 ) {
+
                     std::cerr << "libusb_interrupt_transfer(, "
-                              << static_cast<unsigned>(IN_ENDPOINT)
+                              << static_cast<unsigned>(in_endpoint)
                               << "(IN_EP), <"
                               << bytes_transferred
                               << ">, "
@@ -265,22 +255,38 @@ char    *argv[])
                                                             (error)       )
                               << '('
                               << error
-                              << ')'
+                              << ")  expect: "
+                              << expect
+                              << " bytes (in max "
+                              << max_in_packet
+                              << " sized transfers)"
                               << std::endl;
                     close(error);
                 }
 
                 echo[bytes_transferred] = '\0';
-                std::cout << echo;
+                std::cout << echo             ;
 
-                expecting = expecting && max_in;  // handle libusb-generated
-                max_in    = false              ;
+                if (zero_length_packet)
+                    break;  // got it, done
+
+                // can't be here if expect already zero but check anyway
+                // errors can cause stuck data to be sent late/unexpectedly
+                else if (     expect
+                         && ((expect -= bytes_transferred) == 0)
+                         && bytes_transferred == max_in_packet  )
+                    zero_length_packet = true;
             }
 
-            if (length == 0) std::cout << std::endl;
-        }
-    }
+            std::cout << std::endl;
+
+            offset += xfer_length    ;
+            length -= xfer_length    ;
+
+        }  // while (length)
+
+    }  // main loop
 
     close(SIGINT);
 
-}
+}  // main()

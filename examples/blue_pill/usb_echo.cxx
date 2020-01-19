@@ -118,15 +118,18 @@ const uint8_t        send_endpt)
             uint8_t     recv_ndx  = 0,
                         sub_count = 0;
             while (recv_ndx < recv_len) {
+                // 0123456...
+                // cccc+ ....
+
                 bitops::BinToHex::uint16(msg_count,
                                          reinterpret_cast<char*>(send_buf));
-                send_buf[4] = ' ';
-                send_len    = 5  ;
 
-                bitops::BinToHex::uint8(sub_count++,
-                                        reinterpret_cast<char*>(send_buf + 5));
-                send_buf[7] = ' ';
-                send_len    = 8  ;
+                if (sub_count++ == 0) send_buf[4] = ' ';
+                else                  send_buf[4] = '+';
+
+                send_buf[5] = ' ';
+
+                send_len = 6;
 
                 while (recv_ndx < recv_len && send_len < send_max - 1)
                     send_buf[send_len++] = recv_buf[recv_ndx++];
@@ -139,17 +142,18 @@ const uint8_t        send_endpt)
                     usb_dev.poll();
 #endif
 
-                if (send_len == 64)
-                    // exactly IN endpoint size
-                    // have to send zero-length xfer to let host know is end
-                    while (!usb_dev.send(send_endpt, send_buf, 0))
+            }
+
+            if (send_len == send_max)
+                // exactly IN endpoint size
+                // have to send zero-length xfer to let host know is end
+                while (!usb_dev.send(send_endpt, send_buf, 0))
 #ifdef USB_DEV_INTERRUPT_DRIVEN
-                        asm("wfi");
+                    asm("wfi");
 #else
-                        usb_dev.poll();
+                    usb_dev.poll();
 #endif
 
-            }
             ++msg_count;
         }
     }

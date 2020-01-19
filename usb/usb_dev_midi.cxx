@@ -168,7 +168,7 @@ uint8_t UsbDev::_CONFIG_DESC[] = {  // not const because set total size entry
     // Standard Bulk IN Endpoint Descriptor
     0x09,   // bLength: length of descriptor: 9
     static_cast<uint8_t>(UsbDev::DescriptorType::ENDPOINT),// bDescriptorType
-    UsbDevMidi::BULK_IN_ENDPOINT | UsbDev::ENDPOINT_DIR_IN,// bEndpiontAddress:1
+    UsbDevMidi::BULK_IN_ENDPOINT | UsbDev::ENDPOINT_DIR_IN,// bEndpointAddress:1
     static_cast<uint8_t>(UsbDev::EndpointType::BULK),      // bmAttributes
     0x40,   // wMaxPacketSize: 64
     0x00,   //       "       : MSB of uint16_t

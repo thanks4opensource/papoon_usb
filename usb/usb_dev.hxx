@@ -23,7 +23,7 @@
 
 #define USB_DEV_MAJOR_VERSION   1
 #define USB_DEV_MINOR_VERSION   2
-#define USB_DEV_MICRO_VERSION   0
+#define USB_DEV_MICRO_VERSION   1
 
 #include <stm32f103xb.hxx>
 
@@ -105,8 +105,8 @@ class UsbDev {
         _recv_callbacks       {{0, 0}                   },
         _send_callbacks       {{0, 0}                   },
 #endif
-        _epaddr2eprn          {                         },
-        _eprn2epaddr          {                         },
+        _epaddr2eprn          {0                        },
+        _eprn2epaddr          {0                        },
         _send_info            (                         ),
         _recv_info            (                         ),
         _setup_packet         (0                        ),
@@ -116,7 +116,7 @@ class UsbDev {
         _send_readys          (0x0000                   ),
         _send_readys_pending  (0x0000                   ),
         _last_send_size       (0                        ),
-        _num_endpoints        (1                        ), // parse descriptor,
+        _num_eprns            (1                        ), // parse descriptor,
                                                            // always endpoint 0
         _current_configuration(0                        ),
         _current_interface    (0                        ),
@@ -574,13 +574,22 @@ class UsbDev {
     static const uint8_t    IMPOSSIBLE_DEV_ADDR = 0xff;
 
 
+    // mapping from USB descriptor bDescriptorType (at CONFIG_DESC_SIZE_NDX
+    // offset in descriptor) to Usb::Epr::EP_TYPE_XXX
     static const stm32f103xb::Usb::Epr::mskd_t  _DESC_EP_TYPE_TO_EPR_EP_TYPE[];
 
+    // derived class implements _DEVICE_DESC, _CONFIG_DESC, and _STRING_DESCS
+    // _CONFIG_DESC parsed in init() -- minimal checking done, malformed
+    //   descriptor (bad bLength fields, duplicate or 0==control
+    //   bEndpointAddress values, etc) will cause HardFault exception or
+    //   inoperative USB peripheral. (Note *can* have bEndpointAddress of
+    //   0x8n and 0x0n -- IN and OUT endpoints with same numeric address.)
     static const uint8_t    _DEVICE_DESC              [],
                             _LANGUAGE_ID_STRING_DESC  [],
                             _VENDOR_STRING_DESC       [];
-    static       uint8_t    _CONFIG_DESC              [],  // non-const: length
-                            _SERIAL_NUMBER_STRING_DESC[];  // non const
+                            // must be non-const because runtime setting of ...
+    static       uint8_t    _CONFIG_DESC              [],  // ... bLength field
+                            _SERIAL_NUMBER_STRING_DESC[];  // ... all bytes
     static const uint8_t*   _STRING_DESCS[];
 
     void    reset(),
@@ -636,6 +645,9 @@ class UsbDev {
                                 // Istr::EP_ID and Epr::EA fields are 4 bits wide
       uint8_t                   _epaddr2eprn   [ENDPOINT_ADDR_MASK + 1];
 
+                                // must be saved -- can't rely on on
+                                // Usb::eprn[n].EA field because gets cleared
+                                // on extra USB reset during enumeration
       uint8_t                   _eprn2epaddr   [  stm32f103xb
                                                 ::Usb
                                                 ::NUM_ENDPOINT_REGS   ];
@@ -652,7 +664,7 @@ class UsbDev {
                                 _send_readys_pending  ;
 
       uint16_t                  _last_send_size       ;
-      uint8_t                   _num_endpoints        ,
+      uint8_t                   _num_eprns            ,
                                 _current_configuration,
                                 _current_interface    ,
                                 _pending_set_addr     ;

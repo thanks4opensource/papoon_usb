@@ -52,12 +52,10 @@ int main()
                     send_len;
 
         if (recv_len = usb_dev.recv(UsbDevCdcAcm::CDC_ENDPOINT_OUT, recv_buf)) {
-            // process data received from host
+            // process data received from host -- populate send_buf and set send_len
+
+            while (!usb_dev.send(UsbDevCdcAcm::CDC_ENDPOINT_IN, send_buf, send_len))
+                usb_dev.poll();
         }
-
-        // fill buffer and set send_len
-
-        while (!usb_dev.send(UsbDevCdcAcm::CDC_ENDPOINT_IN, send_buf, send_len))
-            usb_dev.poll();
     }
 }

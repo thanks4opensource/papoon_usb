@@ -29,6 +29,22 @@ class BinToHex {
   public:
     const char* hex() const { return _hex; }
 
+    const char* uint4(
+    const uint8_t   bin)
+    {
+        _hex[0] = hex(bin);
+        _hex[1] = '\0';
+        return _hex;
+    }
+
+    static const char* uint4(
+    const uint8_t    bin,
+          char      *hex)
+    {
+        *hex = BinToHex::hex(bin);
+        return hex;
+    }
+
     const char* uint8(
     const uint8_t   bin)
     {

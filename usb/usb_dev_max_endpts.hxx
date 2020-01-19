@@ -18,8 +18,8 @@
 // <https://www.gnu.org/licenses/gpl.html>
 
 
-#ifndef USB_DEV_SIMPLE_HXX
-#define USB_DEV_SIMPLE_HXX
+#ifndef USB_DEV_MAX_ENDPTS_HXX
+#define USB_DEV_MAX_ENDPTS_HXX
 
 #include <usb_dev.hxx>
 
@@ -34,19 +34,39 @@
 
 namespace stm32f10_12357_xx {
 
-class UsbDevSimple : public UsbDev
+class UsbDevMaxEndpts : public UsbDev
 {
   public:
-    static const uint8_t    // have to be public for clients, static descriptors
-                             IN_ENDPOINT            =  1,// 0x81 with DIR_IN bit
-                            OUT_ENDPOINT            =  2,
-                            // have to be public for extern static definition
-                             IN_ENDPOINT_MAX_PACKET = 64,
-                            OUT_ENDPOINT_MAX_PACKET = 64,
-                             IN_ENDPOINT_INTERVAL   =  1,  // frames @ 1 ms each
-                            OUT_ENDPOINT_INTERVAL   =  1;  // frames @ 1 ms each
+    static const uint8_t
+        // have to be public for clients, static descriptors
+        NUM_IN_OUT_ENDPOINTS    = 7,  // plus control endpt 0, hardware max is 8
+        // random endpoint addresses and order in configuration descriptor
+         IN_ENDPOINT_1           = UsbDev::ENDPOINT_DIR_IN |  7,
+        OUT_ENDPOINT_1           =                            7,
+         IN_ENDPOINT_2           = UsbDev::ENDPOINT_DIR_IN |  2,
+        OUT_ENDPOINT_2           =                            2,
+         IN_ENDPOINT_3           = UsbDev::ENDPOINT_DIR_IN | 13,
+        OUT_ENDPOINT_3           =                           13,
+         IN_ENDPOINT_4           = UsbDev::ENDPOINT_DIR_IN |  9,
+        OUT_ENDPOINT_4           =                            9,
+         IN_ENDPOINT_5           = UsbDev::ENDPOINT_DIR_IN |  1,
+        OUT_ENDPOINT_5           =                            1,
+         IN_ENDPOINT_6           = UsbDev::ENDPOINT_DIR_IN | 15,
+        OUT_ENDPOINT_6           =                           15,
+         IN_ENDPOINT_7           = UsbDev::ENDPOINT_DIR_IN |  5,
+        OUT_ENDPOINT_7           =                            5,
+        // have to be public for extern static definition
+         IN_ENDPOINTS_MAX_PACKET = 16,  // PMA: (512-2*64-8*16)/14=18.28571...
+        OUT_ENDPOINTS_MAX_PACKET = IN_ENDPOINTS_MAX_PACKET,
+         IN_ENDPOINTS_INTERVAL  =  1,  // frames @ 1 ms each
+        OUT_ENDPOINTS_INTERVAL  =  1;  // frames @ 1 ms each
 
-    constexpr UsbDevSimple()
+    // for client access to above endpoint order->addresses
+    // has OUT endpoints, i.e. without UsbDev::ENDPOINT_DIR_IN, as
+    //   per UsbDev client APIs
+    static const uint8_t    ENDPOINT_ADDRESSES[NUM_IN_OUT_ENDPOINTS];
+
+    constexpr UsbDevMaxEndpts()
     :   UsbDev()
     {}
 
@@ -81,8 +101,8 @@ class UsbDevSimple : public UsbDev
     static const uint8_t        _device_string_desc[];
     static       LineCoding     _line_coding         ;
 
-};  // class UsbDevSimple
+};  // class UsbDevMaxEndpts
 
 }  // namespace stm32f10_12357_xx
 
-#endif  // ifndef USB_DEV_SIMPLE_HXX
+#endif  // ifndef USB_DEV_MAX_ENDPTS_HXX

@@ -109,7 +109,7 @@ bool UsbDev::init()
     // Parse configuration descriptor to find endpoint descriptors.
     // Assumes descriptor size ("bLength" value, first byte of descrriptor)
     //   is correct.
-    // Note  _num_endpoints is initialized to 1 in constructor (always have
+    // Note  _num_eprns is initialized to 1 in constructor (always have
     // control endpoint)
     //
     for (const uint8_t*     desc_data =   _CONFIG_DESC                       ;
@@ -137,9 +137,30 @@ bool UsbDev::init()
         uint8_t     endpoint_dir  = address & ENDPOINT_DIR_IN   ,
                     endpoint_addr = address & ENDPOINT_ADDR_MASK;
 
+        if (endpoint_addr == 0) {
+            // illegal endpoint (can't redefine control endpoint 0)
+            success = false;
+            break;
+        }
+
+        // check if already have this endpoint_addr, possibly with different
+        // endpoint_dir (okay, will just add new dir to old) or pathologically
+        // (mistake in configuration descriptor, repeated endpoint+dir)
+        uint8_t     eprn_ndx = _epaddr2eprn[endpoint_addr];
+        if (eprn_ndx == 0)            // is new, not-seen_before endpoint address
+            eprn_ndx = _num_eprns++;  // assign to next empty Usb::Eprn
+        // else is either malformed redefinition of a prior endpoint
+        // (accept without error) or is defining OUT for already define IN
+        // or vice-versa (allowed by USB spec and ST USB peripheral)
+
+        if (eprn_ndx == Usb::NUM_ENDPOINT_REGS) {    // have run out of EPRNS
+            success = false;
+            break;
+        }
+
         // mappings
-        _epaddr2eprn[endpoint_addr ] = _num_endpoints;
-        _eprn2epaddr[_num_endpoints] = endpoint_addr ;
+        _epaddr2eprn[endpoint_addr] = eprn_ndx   ;
+        _eprn2epaddr[eprn_ndx     ] = endpoint_addr;
 
         uint16_t    adjusted_packet_size;
 
@@ -149,12 +170,12 @@ bool UsbDev::init()
         else { // OUT / recv / rx
             // converts to allowed modulo 2 or modulo 32 values
              _pma_descs
-            .eprn(_num_endpoints)
+            .eprn(eprn_ndx)
             .count_rx
             .set_num_blocks_0(max_packet_size);
 
             // retrieve converted value
-            adjusted_packet_size =  _pma_descs.eprn(_num_endpoints)
+            adjusted_packet_size =  _pma_descs.eprn(eprn_ndx)
                                    .count_rx
                                    .num_bytes_0();
 
@@ -164,50 +185,44 @@ bool UsbDev::init()
 
         // check for memory collision, up-growing buffer descriptors
         // vs. down-growing packet buffer memory
-        if (   _BTABLE_OFFSET + (_num_endpoints * sizeof(UsbBufDesc))
+        if (   _BTABLE_OFFSET + (eprn_ndx * sizeof(UsbBufDesc))
             >= (pma_addr -= adjusted_packet_size)                    ) {
             // ignore this and any further endpoint descriptors
             success = false;
             break;
         }
 
-        _endpoints[_num_endpoints].type = static_cast<DescriptorType>(
-                                          *(  desc_data
+        _endpoints[eprn_ndx].type = static_cast<DescriptorType>(
+                                              *(  desc_data
                                             + _ENDPOINT_DESC_ATTRIBUTES_NDX));
 
         if (endpoint_dir) {  // IN / send / tx
             // use original value
-            _endpoints[_num_endpoints].max_send_packet = max_packet_size;
+            _endpoints[eprn_ndx].max_send_packet = max_packet_size;
 
             // already decremented above
-            _pma_descs.eprn(_num_endpoints).addr_tx = pma_addr;
+            _pma_descs.eprn(eprn_ndx).addr_tx = pma_addr;
 
             // CPU memory addressing
-              _endpoints[_num_endpoints].send_pma
+              _endpoints[eprn_ndx].send_pma
             = reinterpret_cast<uint32_t*>(  USB_PMAADDR
                                           + _BTABLE_OFFSET
                                           + (pma_addr << 1));
         }
         else {
             // use original value
-            _endpoints[_num_endpoints].max_recv_packet = max_packet_size;
+            _endpoints[eprn_ndx].max_recv_packet = max_packet_size;
 
             // already decremented above
-            _pma_descs.eprn(_num_endpoints).addr_rx = pma_addr;
+            _pma_descs.eprn(eprn_ndx).addr_rx = pma_addr;
 
             // count_rx already set abov
 
             // CPU vs peripheral memory addressing
-              _endpoints[_num_endpoints].recv_pma
+              _endpoints[eprn_ndx].recv_pma
             = reinterpret_cast<uint32_t*>(  USB_PMAADDR
                                           + _BTABLE_OFFSET
                                           + (pma_addr << 1));
-        }
-
-        if (++_num_endpoints == Usb::NUM_ENDPOINT_REGS) {
-            // ignore any further endpoint descriptors
-            success = false;
-            break;
         }
 
         // is length -- step to next descriptor
@@ -385,7 +400,7 @@ void UsbDev::reset()
     _send_readys_pending = 0x0001;  //    "       "    ,  "   "    "
 
     // rest of endpoints
-    for (uint8_t eprn_ndx = 1 ; eprn_ndx < _num_endpoints ; ++eprn_ndx) {
+    for (uint8_t eprn_ndx = 1 ; eprn_ndx < _num_eprns ; ++eprn_ndx) {
         uint8_t             endpoint_addr = _eprn2epaddr[eprn_ndx        ];
         Usb::Epr::mskd_t    endpoint_type = _DESC_EP_TYPE_TO_EPR_EP_TYPE[
                                              static_cast<unsigned>(
@@ -401,21 +416,21 @@ void UsbDev::reset()
             usb->eprn(eprn_ndx) =   Usb::Epr::STAT_RX_VALID
                                   | endpoint_type
                                   | Usb::Epr::STAT_TX_NAK
-                                  | Usb::Epr::ea(eprn_ndx)  ;
+                                  | Usb::Epr::ea(endpoint_addr);
             _send_readys_pending |= 1 << endpoint_addr;
         }
 
         else if (_endpoints[eprn_ndx].max_send_packet) {
             usb->eprn(eprn_ndx) =   Usb::Epr::STAT_TX_NAK
                                   | endpoint_type
-                                  | Usb::Epr::ea(eprn_ndx);
+                                  | Usb::Epr::ea(endpoint_addr);
             _send_readys_pending |= 1 << endpoint_addr;
         }
 
         else if (_endpoints[eprn_ndx].max_recv_packet)
             usb->eprn(eprn_ndx) =   Usb::Epr::STAT_RX_VALID
                                   | endpoint_type
-                                  | Usb::Epr::ea(eprn_ndx)  ;
+                                  | Usb::Epr::ea(endpoint_addr);
     }
 
     if (   _device_state == DeviceState::ADDRESSED
@@ -632,8 +647,7 @@ bool UsbDev::descriptor_request()
             return true;
 
         case Descriptor::CONFIGURATION:
-            _send_info.set(_CONFIG_DESC         ,
-                           _setup_packet->length);
+            _send_info.set(_CONFIG_DESC, _setup_packet->length);
             return true;
 
         case Descriptor::STRING:
@@ -848,7 +862,7 @@ void UsbDev::set_address(
 const uint8_t   address)
 {
 
-    for (uint8_t ndx = 0 ; ndx < _num_endpoints ; ++ndx)
+    for (uint8_t ndx = 0 ; ndx < _num_eprns ; ++ndx)
         usb->eprn(ndx).write(Usb::Epr::mskd_t(Usb::Epr::EA_MASK,
                                               _eprn2epaddr[ndx],
                                               Usb::Epr::EA_POS ));
